@@ -1,0 +1,104 @@
+---
+title: "欢迎使用 VovBlog"
+date: "2025-10-30"
+tags: ["博客", "欢迎"]
+category: "公告"
+published: true
+description: "这是您的第一篇示例文章，展示了 VovBlog 的基本功能。"
+---
+
+# 欢迎使用 VovBlog！
+
+这是一个基于 Next.js 和 Cloudinary 构建的现代化博客系统。
+
+## 主要特性
+
+### ✨ 强大的编辑器
+
+- **TipTap 富文本编辑器**：提供类似 Notion 的编辑体验
+- **图片粘贴上传**：直接粘贴图片，自动上传到 Cloudinary
+- **拖拽上传**：支持拖拽图片到编辑器
+- **保留格式**：从其他网页复制内容时，自动保留标题格式（h1-h6）
+
+### 📝 内容管理
+
+- **标签系统**：为文章添加多个标签，方便分类
+- **分类管理**：按照分类组织文章
+- **草稿功能**：可以保存草稿，稍后发布
+- **搜索功能**：全文搜索文章内容
+
+### 🚀 技术栈
+
+- **Next.js 15**：最新的 React 框架
+- **Tailwind CSS**：现代化的样式方案
+- **Cloudinary**：可靠的图片存储和 CDN
+- **MDX**：支持在 Markdown 中使用 React 组件
+
+## 快速开始
+
+### 1. 配置 Cloudinary
+
+复制 `.env.local.example` 为 `.env.local`，填入您的 Cloudinary 凭据：
+
+\`\`\`bash
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+\`\`\`
+
+### 2. 启动开发服务器
+
+\`\`\`bash
+npm run dev
+\`\`\`
+
+访问 `http://localhost:3000` 查看博客。
+
+### 3. 创建文章
+
+访问 `/admin/new` 开始创建您的第一篇文章！
+
+## 图片示例
+
+您可以直接粘贴图片到编辑器中，图片会自动上传到 Cloudinary：
+
+*（在编辑器中粘贴或拖拽图片即可）*
+
+## 代码高亮
+
+支持代码块语法高亮：
+
+```javascript
+function greet(name) {
+  console.log('Hello, ' + name + '!')
+}
+
+greet('VovBlog')
+```
+
+## 列表
+
+### 无序列表
+
+- 功能一
+- 功能二
+- 功能三
+
+### 有序列表
+
+1. 第一步
+2. 第二步
+3. 第三步
+
+## 引用
+
+> 这是一个引用示例。VovBlog 让博客写作变得简单而优雅。
+
+## 接下来做什么？
+
+- 探索管理后台
+- 创建更多文章
+- 自定义样式
+- 部署到 Vercel
+
+祝您使用愉快！🎉
