@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
 import { Post } from '@/lib/posts'
-import { PlusCircle, Edit, Trash2, Eye, FileText } from 'lucide-react'
+import { PlusCircle, Edit, Trash2, Eye, FileText, LogOut } from 'lucide-react'
 
 export default function AdminPage() {
+  const router = useRouter()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -48,6 +50,16 @@ export default function AdminPage() {
     }
   }
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      router.push('/admin/login')
+    } catch (error) {
+      console.error('登出失败:', error)
+      alert('登出失败，请重试')
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto text-center py-16">
@@ -60,13 +72,23 @@ export default function AdminPage() {
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">文章管理</h1>
-        <Link
-          href="/admin/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-        >
-          <PlusCircle className="w-4 h-4" />
-          新建文章
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            href="/admin/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+          >
+            <PlusCircle className="w-4 h-4" />
+            新建文章
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-200 text-slate-900 rounded-lg hover:bg-slate-300 transition-colors"
+            title="退出登录"
+          >
+            <LogOut className="w-4 h-4" />
+            登 出
+          </button>
+        </div>
       </div>
 
       {posts.length === 0 ? (
