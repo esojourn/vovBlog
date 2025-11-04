@@ -2,6 +2,14 @@
 
 一个基于 Next.js 15、TipTap 编辑器和 Cloudinary 构建的现代化博客系统。
 
+## 🚀 快速开始
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fesojourn%2FvovBlog)
+
+获取 Cloudinary API Key；
+点击 "Deploy with Vercel"，设置 ADMIN_PASSWORD 环境变量作为管理员密码；
+开始使用吧！ :)
+
 ## ✨ 特性
 
 - 📝 **强大的富文本编辑器**：基于 TipTap，类似 Notion 的编辑体验
