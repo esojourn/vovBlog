@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "./deploy.sh",
+    "deploy:vercel": "vercel --prod",
+    "deploy:check": "node scripts/check-env.js"
   },
   "dependencies": {
     "@tiptap/extension-image": "^2.10.0",
@@ -17,11 +20,13 @@
     "cloudinary": "^2.5.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.3.0",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.468.0",
     "next": "^15.1.0",
     "next-cloudinary": "^6.15.0",
     "next-mdx-remote": "^5.0.0",
+    "pinyin-pro": "^3.27.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.6.0",

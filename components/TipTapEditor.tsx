@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useCallback, useState } from 'react'
+import DOMPurify from 'dompurify'
 import {
   Bold,
   Italic,
@@ -29,6 +30,54 @@ export default function TipTapEditor({
   placeholder = '开始写作...',
 }: TipTapEditorProps) {
   const [uploading, setUploading] = useState(false)
+
+  const sanitizeHtml = (html: string) => {
+    // 第一步：DOMPurify清理危险标签和属性
+    const cleanHtml = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'strong', 'em', 'u', 's', 'a', 'ul', 'ol', 'li', 'blockquote',
+        'code', 'pre', 'span', 'div'
+      ],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'],
+      ALLOW_DATA_ATTR: false,
+      FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
+      FORBID_ATTR: ['onerror', 'onclick', 'onload', 'style'],
+      KEEP_CONTENT: true,
+    })
+
+    // 第二步：HTML结构修复（处理复杂的嵌套错误）
+    let fixedHtml = cleanHtml
+
+    // 修复自闭合标签后的错误结束标签（如<img></p>）
+    fixedHtml = fixedHtml.replace(/<(img|br|hr)\s*[^>]*>(?=[^<]*<\/p>)/gi, '<$1 />')
+
+    // 修复孤立的结束标签
+    fixedHtml = fixedHtml.replace(/<\/p>\s*<\/p>/g, '</p>') // 连续结束标签
+    fixedHtml = fixedHtml.replace(/<p>\s*<\/p>/g, '') // 空段落
+
+    // 统一自闭合标签格式
+    fixedHtml = fixedHtml
+      .replace(/<br\s*\/?>/gi, '<br />')
+      .replace(/<hr\s*\/?>/gi, '<hr />')
+      .replace(/<img\s+([^>]*?)\/?>/gi, '<img $1 />')
+
+    // 修复段落结构
+    fixedHtml = fixedHtml
+      .replace(/<p><br\s*\/?><\/p>/gi, '')
+      .replace(/<p><br\s*\/?>/gi, '<p>')
+      .replace(/<br\s*\/?><\/p>/gi, '</p>')
+      .replace(/\s+<\/p>/gi, '</p>')
+      .replace(/<p>\s+/gi, '<p>')
+
+    // 第三步：确保所有图片标签格式正确
+    fixedHtml = fixedHtml.replace(
+      /<img([^>]+?)\/>(?=\s*<\/p>)/g,
+      '<img$1 />'
+    )
+
+    return fixedHtml
+  }
 
   const editor = useEditor({
     extensions: [
@@ -74,7 +123,9 @@ export default function TipTapEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      onChange?.(editor.getHTML())
+      const html = editor.getHTML()
+      const sanitizedHtml = sanitizeHtml(html)
+      onChange?.(sanitizedHtml)
     },
   })
 
