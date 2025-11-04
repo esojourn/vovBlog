@@ -22,6 +22,7 @@
     "next": "^15.1.0",
     "next-cloudinary": "^6.15.0",
     "next-mdx-remote": "^5.0.0",
+    "pinyin-pro": "^3.27.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.6.0",
