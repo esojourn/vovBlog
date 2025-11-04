@@ -17,7 +17,7 @@
   "env": {
     "NODE_OPTIONS": "--max_old_space_size=4096"
   },
-  "regions": ["hkg1", "sin1"],
+  "regions": ["hkg1"],
   "headers": [
     {
       "source": "/(.*)",
