@@ -85,7 +85,7 @@ export default function TipTapEditor({
       StarterKit,
       Image.configure({
         inline: true,
-        allowBase64: true,
+        allowBase64: false,  // 禁用 Base64，强制上传到 Cloudinary
       }),
       Placeholder.configure({
         placeholder,
@@ -134,7 +134,21 @@ export default function TipTapEditor({
     async (file: File) => {
       if (!editor) return
 
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件')
+        return
+      }
+
+      // 验证文件大小（限制为 10MB）
+      if (file.size > 10 * 1024 * 1024) {
+        alert('图片大小不能超过 10MB')
+        return
+      }
+
       setUploading(true)
+      console.log('[Editor] 开始上传图片:', file.name)
+
       try {
         const formData = new FormData()
         formData.append('file', file)
@@ -144,15 +158,28 @@ export default function TipTapEditor({
           body: formData,
         })
 
+        console.log('[Editor] 上传响应:', response.status)
+
         if (!response.ok) {
-          throw new Error('上传失败')
+          const errorData = await response.json().catch(() => ({ error: '未知错误' }))
+          console.error('[Editor] 上传错误:', errorData)
+          throw new Error(errorData.error || '上传失败')
         }
 
         const { url } = await response.json()
+
+        if (!url) {
+          throw new Error('服务器未返回图片 URL')
+        }
+
+        console.log('[Editor] 上传成功，URL:', url)
+
+        // 插入图片到编辑器
         editor.chain().focus().setImage({ src: url }).run()
       } catch (error) {
-        console.error('图片上传失败:', error)
-        alert('图片上传失败，请重试')
+        const errorMsg = error instanceof Error ? error.message : '上传失败，请重试'
+        console.error('[Editor] 图片上传失败:', errorMsg)
+        alert(`图片上传失败: ${errorMsg}`)
       } finally {
         setUploading(false)
       }
