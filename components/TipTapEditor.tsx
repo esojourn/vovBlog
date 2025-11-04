@@ -80,6 +80,7 @@ export default function TipTapEditor({
   }
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Image.configure({
