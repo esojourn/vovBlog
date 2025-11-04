@@ -28,6 +28,36 @@ git push -u origin main
 
 ## 部署到 Vercel
 
+### 🚀 一键部署（推荐）
+
+我们提供了一键部署脚本，自动化完成整个部署流程：
+
+```bash
+npm run deploy
+```
+
+或者直接运行脚本：
+
+```bash
+./deploy.sh
+```
+
+一键部署脚本会自动：
+1. ✅ 检查 Node.js 和 npm 环境
+2. ✅ 安装 Vercel CLI（如果未安装）
+3. ✅ 检查环境变量配置
+4. ✅ 安装项目依赖
+5. ✅ 检查代码格式
+6. ✅ 测试构建
+7. ✅ 询问是否提交并推送代码到 Git
+8. 🚀 部署到 Vercel
+9. 🌐 打开 Vercel 仪表板
+
+**可用命令：**
+- `npm run deploy` - 全自动部署流程（交互式）
+- `npm run deploy:vercel` - 直接部署到生产环境
+- `npm run deploy:check` - 检查环境变量配置
+
 ### 方法一：通过 Vercel 网站部署
 
 1. 访问 https://vercel.com

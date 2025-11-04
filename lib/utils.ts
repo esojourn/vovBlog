@@ -25,7 +25,7 @@ export function slugify(text: string): string {
   let result = '';
   let lastWasChinese = false;
 
-  for (let char of text) {
+  for (const char of text) {
     // 检查是否是中文字符
     if (/[\u4e00-\u9fff]/.test(char)) {
       // 中文字符转拼音

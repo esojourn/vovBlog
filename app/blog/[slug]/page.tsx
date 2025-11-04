@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
 import { Calendar, Clock, Tag, FolderOpen } from 'lucide-react'
+import Link from 'next/link'
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -92,12 +93,12 @@ export default async function BlogPostPage({
 
       {/* 返回首页 */}
       <div className="mt-12 pt-8 border-t">
-        <a
+        <Link
           href="/"
           className="text-primary hover:underline"
         >
           ← 返回文章列表
-        </a>
+        </Link>
       </div>
     </article>
   )

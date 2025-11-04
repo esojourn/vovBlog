@@ -43,7 +43,29 @@ npm run dev
 
 访问 `http://localhost:3000` 查看您的博客。
 
-### 4. 创建文章
+### 4. 部署到生产环境
+
+一键部署到 Vercel：
+
+```bash
+npm run deploy
+```
+
+该脚本将自动：
+- 检查环境配置
+- 安装依赖
+- 检查代码格式
+- 构建测试
+- 推送到 Git（可选）
+- 部署到 Vercel
+
+更多部署选项：
+- `npm run deploy:vercel` - 直接部署到生产环境
+- `npm run deploy:check` - 检查环境变量配置
+
+详细部署指南请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)。
+
+### 5. 创建文章
 
 - 访问 `/admin/new` 创建新文章
 - 直接粘贴图片到编辑器，自动上传
