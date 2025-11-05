@@ -25,25 +25,32 @@ interface TipTapEditorProps {
   placeholder?: string
 }
 
+interface UploadProgress {
+  current: number
+  total: number
+}
+
 export default function TipTapEditor({
   content: initialContent = '',
   onChange,
   placeholder = '开始写作...',
 }: TipTapEditorProps) {
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
 
   const sanitizeHtml = (html: string) => {
     // 第一步：DOMPurify清理危险标签和属性
+    // 移除所有微信特定属性和样式（data-*、style等）
     const cleanHtml = DOMPurify.sanitize(html, {
       ALLOWED_TAGS: [
         'p', 'br', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'strong', 'em', 'u', 's', 'a', 'ul', 'ol', 'li', 'blockquote',
         'code', 'pre', 'span', 'div'
       ],
-      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel'],
       ALLOW_DATA_ATTR: false,
-      FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
-      FORBID_ATTR: ['onerror', 'onclick', 'onload', 'style'],
+      FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'section'],
+      FORBID_ATTR: ['onerror', 'onclick', 'onload', 'style', 'class', 'id', 'data-src'],
       KEEP_CONTENT: true,
     })
 
@@ -80,6 +87,281 @@ export default function TipTapEditor({
     return fixedHtml
   }
 
+  // 从 Base64 数据 URL 创建 Blob
+  const dataUrlToBlob = (dataUrl: string): Blob => {
+    const arr = dataUrl.split(',')
+    const mimeMatch = arr[0].match(/:(.*?);/)
+    const mime = mimeMatch ? mimeMatch[1] : 'image/png'
+    const bstr = atob(arr[1])
+    const n = bstr.length
+    const u8arr = new Uint8Array(n)
+    for (let i = 0; i < n; i++) {
+      u8arr[i] = bstr.charCodeAt(i)
+    }
+    return new Blob([u8arr], { type: mime })
+  }
+
+  // 推断图片 MIME 类型（通过 URL 扩展名或 Content-Type 头）
+  const inferImageType = (url: string, contentType?: string): string => {
+    // 优先使用 Content-Type 头
+    if (contentType && contentType.startsWith('image/')) {
+      return contentType
+    }
+
+    // 从 URL 推断类型
+    const urlPath = url.split('?')[0].split('#')[0].toLowerCase()
+    if (urlPath.endsWith('.png')) return 'image/png'
+    if (urlPath.endsWith('.jpg') || urlPath.endsWith('.jpeg')) return 'image/jpeg'
+    if (urlPath.endsWith('.gif')) return 'image/gif'
+    if (urlPath.endsWith('.webp')) return 'image/webp'
+    if (urlPath.endsWith('.svg')) return 'image/svg+xml'
+
+    // 默认当作 JPEG（微信图片通常是 JPEG）
+    return 'image/jpeg'
+  }
+
+  // 判断是否需要使用后端代理上传
+  const shouldUseProxy = (src: string): boolean => {
+    // Base64 图片使用客户端上传
+    if (src.startsWith('data:image/')) return false
+
+    // 微信公众号图片强制使用后端代理（防止 CORS 问题）
+    if (src.includes('mmbiz.qpic.cn')) return true
+
+    // 其他远程 URL 先尝试客户端，失败则在异常处理中降级
+    return false
+  }
+
+  // 通过后端代理上传图片
+  const uploadImageViaProxy = useCallback(
+    async (src: string, index: number, total: number): Promise<string | null> => {
+      try {
+        console.log(`[Editor] 使用后端代理上传 (${index + 1}/${total}):`, src)
+
+        const response = await fetch('/api/proxy-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrls: [src] }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: '未知错误' }))
+          console.warn(`[Editor] 代理上传失败 (${index + 1}/${total}):`, errorData)
+          return null
+        }
+
+        const { results } = await response.json()
+        const result = results?.[0]
+
+        if (result?.url) {
+          console.log(`[Editor] 代理上传成功 (${index + 1}/${total}):`, result.url)
+          return result.url
+        } else {
+          console.warn(`[Editor] 代理上传无返回 URL (${index + 1}/${total}):`, result?.error)
+          return null
+        }
+      } catch (err) {
+        console.error(`[Editor] 代理上传异常 (${index + 1}/${total}):`, err)
+        return null
+      }
+    },
+    []
+  )
+
+  // 从各种来源上传单张图片
+  const uploadImageFromSource = useCallback(
+    async (src: string, index: number, total: number): Promise<string | null> => {
+      try {
+        setUploadProgress({ current: index, total })
+
+        // 判断是否需要使用后端代理
+        if (shouldUseProxy(src)) {
+          console.log(`[Editor] URL 需要后端代理 (${index + 1}/${total}):`, src)
+          return await uploadImageViaProxy(src, index, total)
+        }
+
+        let blob: Blob | null = null
+
+        if (src.startsWith('data:image/')) {
+          // 处理 Base64 图片
+          blob = dataUrlToBlob(src)
+        } else if (src.startsWith('http://') || src.startsWith('https://')) {
+          // 处理远程 URL 图片 - 先尝试客户端
+          try {
+            console.log(`[Editor] 尝试客户端下载 (${index + 1}/${total}):`, src)
+
+            // 设置超时 15 秒
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 15000)
+
+            const response = await fetch(src, {
+              signal: controller.signal,
+            })
+
+            clearTimeout(timeoutId)
+
+            if (!response.ok) {
+              console.warn(
+                `[Editor] 客户端下载失败 (${index + 1}/${total}): ${response.status} ${response.statusText}`
+              )
+              // 降级到后端代理
+              return await uploadImageViaProxy(src, index, total)
+            }
+
+            blob = await response.blob()
+            const contentType = response.headers.get('content-type')
+            const inferredType = inferImageType(src, contentType || undefined)
+
+            console.log(
+              `[Editor] 客户端下载成功 (${index + 1}/${total}): ${blob.size} bytes, type: ${blob.type || contentType || inferredType}`
+            )
+
+            // 如果 blob.type 为空，使用推断的类型重新创建 blob
+            if (!blob.type || !blob.type.startsWith('image/')) {
+              blob = new Blob([blob], { type: inferredType })
+            }
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : String(err)
+            console.warn(
+              `[Editor] 客户端下载异常 (${index + 1}/${total}): ${errorMsg}，降级到后端代理`
+            )
+            // CORS 或网络错误时，降级到后端代理
+            return await uploadImageViaProxy(src, index, total)
+          }
+        } else {
+          console.warn(`[Editor] 不支持的图片源 (${index + 1}/${total}):`, src)
+          return null
+        }
+
+        if (!blob || !blob.type.startsWith('image/')) {
+          console.warn(
+            `[Editor] 无效的图片 blob (${index + 1}/${total}): type=${blob?.type}, size=${blob?.size}`
+          )
+          return null
+        }
+
+        // 验证文件大小
+        if (blob.size > 10 * 1024 * 1024) {
+          console.warn(`[Editor] 图片过大 (${index + 1}/${total}): ${blob.size} bytes`)
+          return null
+        }
+
+        // 上传到 Cloudinary
+        const formData = new FormData()
+        formData.append('file', blob)
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: '未知错误' }))
+          console.warn(`[Editor] 上传图片失败 (${index + 1}/${total}):`, errorData)
+          return null
+        }
+
+        const { url } = await response.json()
+        console.log(`[Editor] 上传成功 (${index + 1}/${total}):`, url)
+        return url || null
+      } catch (err) {
+        console.error(`[Editor] 处理图片出错 (${index + 1}/${total}):`, err)
+        return null
+      }
+    },
+    [inferImageType, uploadImageViaProxy, shouldUseProxy]
+  )
+
+  // 处理包含图片的 HTML 内容
+  const processHtmlWithImages = useCallback(
+    async (html: string, editorInstance: any) => {
+      if (!editorInstance) return
+
+      const MAX_BATCH_SIZE = 5
+
+      try {
+        // 解析 HTML
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(html, 'text/html')
+        const images = Array.from(doc.querySelectorAll('img'))
+
+        if (images.length === 0) {
+          // 没有图片，直接插入清洗后的 HTML
+          const cleanHtml = sanitizeHtml(html)
+          editorInstance.chain().focus().insertContent(cleanHtml).run()
+          return
+        }
+
+        // 有图片，需要逐个上传
+        setUploading(true)
+
+        // 收集所有图片源
+        const imageSources: Array<{ element: Element; src: string }> = []
+        images.forEach((img) => {
+          const src = img.getAttribute('src') || img.getAttribute('data-src') || ''
+          if (src) {
+            imageSources.push({ element: img, src })
+          }
+        })
+
+        console.log(`[Editor] 检测到 ${imageSources.length} 张图片`)
+
+        // 如果超过 5 张，限制为 5 张并提示用户
+        if (imageSources.length > MAX_BATCH_SIZE) {
+          console.warn(
+            `[Editor] 图片数量 ${imageSources.length} 超过限制 ${MAX_BATCH_SIZE}，仅处理前 ${MAX_BATCH_SIZE} 张`
+          )
+          alert(
+            `检测到 ${imageSources.length} 张图片，为避免超时，仅处理前 ${MAX_BATCH_SIZE} 张。请分批粘贴。`
+          )
+        }
+
+        // 截取前 5 张
+        const batchImageSources = imageSources.slice(0, MAX_BATCH_SIZE)
+
+        // 逐个上传图片
+        const uploadPromises = batchImageSources.map(({ src }, index) =>
+          uploadImageFromSource(src, index, batchImageSources.length)
+        )
+        const uploadedUrls = await Promise.all(uploadPromises)
+
+        // 替换 HTML 中的图片 URL
+        batchImageSources.forEach(({ element }, index) => {
+          const newUrl = uploadedUrls[index]
+          if (newUrl) {
+            element.setAttribute('src', newUrl)
+            element.removeAttribute('data-src')
+          } else {
+            // 上传失败时尝试保留原 URL，如果是 Base64 则删除（因为太大）
+            const src = element.getAttribute('src') || ''
+            if (src.startsWith('data:image/')) {
+              element.remove()
+            }
+          }
+        })
+
+        // 移除超过限制的图片
+        imageSources.slice(MAX_BATCH_SIZE).forEach(({ element }) => {
+          element.remove()
+        })
+
+        // 清洗 HTML 并插入编辑器
+        const cleanHtml = sanitizeHtml(doc.body.innerHTML)
+        editorInstance.chain().focus().insertContent(cleanHtml).run()
+
+        const successCount = uploadedUrls.filter((url) => url).length
+        console.log(`[Editor] 成功处理 ${successCount}/${batchImageSources.length} 张图片`)
+      } catch (err) {
+        console.error('[Editor] 处理 HTML 内容失败:', err)
+        alert(`处理内容失败: ${err instanceof Error ? err.message : '未知错误'}`)
+      } finally {
+        setUploading(false)
+        setUploadProgress(null)
+      }
+    },
+    [uploadImageFromSource, sanitizeHtml]
+  )
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -111,6 +393,7 @@ export default function TipTapEditor({
       handlePaste: (view, event) => {
         const items = Array.from(event.clipboardData?.items || [])
 
+        // 优先处理图片文件
         for (const item of items) {
           if (item.type.startsWith('image/')) {
             event.preventDefault()
@@ -121,6 +404,15 @@ export default function TipTapEditor({
             return true
           }
         }
+
+        // 处理 HTML 内容中的图片
+        const html = event.clipboardData?.getData('text/html')
+        if (html && html.includes('<img')) {
+          event.preventDefault()
+          processHtmlWithImages(html, editor)
+          return true
+        }
+
         return false
       },
     },
@@ -308,7 +600,19 @@ export default function TipTapEditor({
 
       {uploading && (
         <div className="p-2 text-sm text-muted-foreground bg-muted border-t">
-          正在上传图片...
+          {uploadProgress ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>
+                正在上传图片... {uploadProgress.current + 1}/{uploadProgress.total}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>正在处理内容...</span>
+            </div>
+          )}
         </div>
       )}
     </div>
