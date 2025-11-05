@@ -6,6 +6,7 @@ import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useCallback, useState } from 'react'
 import DOMPurify from 'dompurify'
+import { processHtmlWithImages } from '@/lib/imageProcessor'
 import {
   Bold,
   Italic,
@@ -24,12 +25,23 @@ interface TipTapEditorProps {
   placeholder?: string
 }
 
+interface UploadProgress {
+  isUploading: boolean
+  current: number
+  total: number
+}
+
 export default function TipTapEditor({
   content = '',
   onChange,
   placeholder = '开始写作...',
 }: TipTapEditorProps) {
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
+    isUploading: false,
+    current: 0,
+    total: 0,
+  })
 
   const sanitizeHtml = (html: string) => {
     // 第一步：DOMPurify清理危险标签和属性
@@ -109,6 +121,7 @@ export default function TipTapEditor({
       handlePaste: (view, event) => {
         const items = Array.from(event.clipboardData?.items || [])
 
+        // 优先处理直接粘贴的图片文件
         for (const item of items) {
           if (item.type.startsWith('image/')) {
             event.preventDefault()
@@ -119,6 +132,17 @@ export default function TipTapEditor({
             return true
           }
         }
+
+        // 处理HTML内容（从网页复制）
+        const htmlItem = items.find((item) => item.type === 'text/html')
+        if (htmlItem) {
+          event.preventDefault()
+          htmlItem.getAsString((htmlString) => {
+            processHtmlPaste(htmlString)
+          })
+          return true
+        }
+
         return false
       },
     },
@@ -154,6 +178,60 @@ export default function TipTapEditor({
         alert('图片上传失败，请重试')
       } finally {
         setUploading(false)
+      }
+    },
+    [editor]
+  )
+
+  const processHtmlPaste = useCallback(
+    async (htmlString: string) => {
+      if (!editor) return
+
+      setUploadProgress({ isUploading: true, current: 0, total: 0 })
+
+      try {
+        // 处理HTML中的图片：下载并上传到Cloudinary
+        const processedHtml = await processHtmlWithImages(htmlString, (current, total) => {
+          setUploadProgress({ isUploading: true, current, total })
+        })
+
+        // 清理并验证HTML
+        const sanitizedHtml = sanitizeHtml(processedHtml)
+
+        // 检查是否有内容被插入
+        if (!sanitizedHtml || sanitizedHtml.length === 0) {
+          console.warn('⚠️ 粘贴的内容为空或无法处理')
+          alert('粘贴的内容无法处理。请尝试：\n- 复制其他内容重试\n- 使用右键 → "复制图片" 来复制单个图片')
+          return
+        }
+
+        // 插入到编辑器
+        editor.chain().focus().insertContent(sanitizedHtml).run()
+
+        // 成功提示
+        console.log('✓ 粘贴内容处理成功')
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error)
+        console.error('HTML粘贴处理失败:', errorMsg)
+
+        // 更详细的错误提示 - 根据不同错误类型显示不同提示
+        let userMessage = '处理粘贴内容失败。'
+
+        if (errorMsg.includes('CORS') || errorMsg.includes('跨域')) {
+          userMessage +=
+            '\n\n某些图片因为跨域限制无法下载。这是网站安全保护。\n\n解决方案：\n- 右键点击图片 → "复制图片" 后单独粘贴\n- 使用截图工具（Ctrl+Shift+S）截取图片\n- 尝试其他内容来源'
+        } else if (errorMsg.includes('超时')) {
+          userMessage += '\n\n图片下载超时。请检查网络连接后重试。'
+        } else if (errorMsg.includes('无效')) {
+          userMessage += '\n\n粘贴的内容格式无效。请尝试复制其他内容。'
+        } else {
+          userMessage +=
+            '\n\n请尝试：\n- 刷新页面后重试\n- 复制其他内容重试\n- 右键点击图片 → "复制图片" 来复制单个图片'
+        }
+
+        alert(userMessage)
+      } finally {
+        setUploadProgress({ isUploading: false, current: 0, total: 0 })
       }
     },
     [editor]
@@ -277,9 +355,17 @@ export default function TipTapEditor({
       {/* 编辑器内容 */}
       <EditorContent editor={editor} className="min-h-[400px]" />
 
-      {uploading && (
+      {(uploading || uploadProgress.isUploading) && (
         <div className="p-2 text-sm text-muted-foreground bg-muted border-t">
-          正在上传图片...
+          {uploading ? (
+            '正在上传图片...'
+          ) : uploadProgress.total > 0 ? (
+            <>
+              正在处理粘贴内容... ({uploadProgress.current}/{uploadProgress.total} 张图片)
+            </>
+          ) : (
+            '正在处理粘贴内容...'
+          )}
         </div>
       )}
     </div>
