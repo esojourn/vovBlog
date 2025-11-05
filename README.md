@@ -1,6 +1,6 @@
 # VovBlog
 
-一个基于 Next.js 15、TipTap 编辑器和 Cloudinary 构建的现代化博客系统。
+一个基于 Next.js 16、TipTap 编辑器和 Cloudinary 构建的现代化博客系统。
 
 ## 🚀 快速开始
 
@@ -24,7 +24,7 @@
 ### 1. 安装依赖
 
 \`\`\`bash
-npm install
+bun install
 \`\`\`
 
 ### 2. 配置环境变量
@@ -46,7 +46,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 ### 3. 启动开发服务器
 
 \`\`\`bash
-npm run dev
+bun run dev
 \`\`\`
 
 访问 `http://localhost:3000` 查看您的博客。
@@ -56,7 +56,7 @@ npm run dev
 一键部署到 Vercel：
 
 ```bash
-npm run deploy
+bun run deploy
 ```
 
 该脚本将自动：
@@ -68,8 +68,8 @@ npm run deploy
 - 部署到 Vercel
 
 更多部署选项：
-- `npm run deploy:vercel` - 直接部署到生产环境
-- `npm run deploy:check` - 检查环境变量配置
+- `bun run deploy:vercel` - 直接部署到生产环境
+- `bun run deploy:check` - 检查环境变量配置
 
 详细部署指南请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
@@ -82,7 +82,8 @@ npm run deploy
 
 ## 📦 技术栈
 
-- **框架**：Next.js 15 (App Router)
+- **框架**：Next.js 16 (App Router)
+- **包管理**：Bun
 - **编辑器**：TipTap (富文本编辑器)
 - **样式**：Tailwind CSS
 - **图片存储**：Cloudinary
