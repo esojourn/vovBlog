@@ -27,9 +27,25 @@ export default function NewPostPage() {
   const [tagInput, setTagInput] = useState('')
   const [saving, setSaving] = useState(false)
 
+  const validateContent = (content: string): boolean => {
+    // 检查编辑器中是否有上传进度中的或无效的图片
+    // 允许 Cloudinary URL 或本地开发 URL（localhost, 127.0.0.1）
+    const invalidImagePattern = /<img\s+[^>]*src=["'](?!https:\/\/res\.cloudinary\.com)(?!http:\/\/localhost)(?!http:\/\/127\.0\.0\.1)(?!data:)[^"']*["']/gi
+
+    if (invalidImagePattern.test(content)) {
+      alert('检测到无效的图片 URL。请确保所有图片都已成功上传到 Cloudinary。')
+      return false
+    }
+    return true
+  }
+
   const handleSave = async (publish: boolean) => {
     if (!formData.title.trim()) {
       alert('请输入文章标题')
+      return
+    }
+
+    if (!validateContent(formData.content)) {
       return
     }
 
