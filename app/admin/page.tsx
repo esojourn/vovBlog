@@ -19,10 +19,24 @@ export default function AdminPage() {
   const fetchPosts = async () => {
     try {
       const response = await fetch('/api/posts')
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: 获取文章失败`)
+      }
+
       const data = await response.json()
-      setPosts(data)
+
+      // 验证数据类型，确保是数组
+      if (Array.isArray(data)) {
+        setPosts(data)
+      } else {
+        console.error('API 返回非数组数据:', data)
+        setPosts([])
+      }
     } catch (error) {
       console.error('获取文章失败:', error)
+      // 错误时设置为空数组，防止 .map() 调用失败
+      setPosts([])
     } finally {
       setLoading(false)
     }
