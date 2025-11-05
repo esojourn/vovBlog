@@ -7,6 +7,7 @@ import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useCallback, useState } from 'react'
 import DOMPurify from 'dompurify'
+import { html as beautifyHtml } from 'js-beautify'
 import hljs from 'highlight.js/lib/core'
 import html from 'highlight.js/lib/languages/xml'
 import 'highlight.js/styles/atom-one-light.css'
@@ -66,17 +67,15 @@ export default function TipTapEditor({
     let fixedHtml = cleanHtml
 
     // 修复自闭合标签后的错误结束标签（如<img></p>）
-    fixedHtml = fixedHtml.replace(/<(img|br|hr)\s*[^>]*>(?=[^<]*<\/p>)/gi, '<$1 />')
+    // 注意：保留属性，防止图片 src 丢失
+    // 修复 img 标签（保留所有属性）
+    fixedHtml = fixedHtml.replace(/<img\s+([^>]*?)\s*\/?>/gi, '<img $1 />')
+    // 修复 br 和 hr 标签
+    fixedHtml = fixedHtml.replace(/<(br|hr)\s*\/?>/gi, '<$1 />')
 
     // 修复孤立的结束标签
     fixedHtml = fixedHtml.replace(/<\/p>\s*<\/p>/g, '</p>') // 连续结束标签
     fixedHtml = fixedHtml.replace(/<p>\s*<\/p>/g, '') // 空段落
-
-    // 统一自闭合标签格式
-    fixedHtml = fixedHtml
-      .replace(/<br\s*\/?>/gi, '<br />')
-      .replace(/<hr\s*\/?>/gi, '<hr />')
-      .replace(/<img\s+([^>]*?)\/?>/gi, '<img $1 />')
 
     // 修复段落结构
     fixedHtml = fixedHtml
@@ -86,13 +85,32 @@ export default function TipTapEditor({
       .replace(/\s+<\/p>/gi, '</p>')
       .replace(/<p>\s+/gi, '<p>')
 
-    // 第三步：确保所有图片标签格式正确
-    fixedHtml = fixedHtml.replace(
-      /<img([^>]+?)\/>(?=\s*<\/p>)/g,
-      '<img$1 />'
-    )
-
     return fixedHtml
+  }
+
+  // HTML 格式化（美化）- 进入源代码模式时使用
+  const formatHtml = (html: string): string => {
+    try {
+      return beautifyHtml(html, {
+        indent_size: 2,              // 2空格缩进
+        wrap_line_length: 100,       // 每行最多100字符
+        preserve_newlines: true,     // 保留原有换行
+        max_preserve_newlines: 1,    // 最多保留1个空行
+        end_with_newline: false,     // 结尾不添加换行
+      })
+    } catch (err) {
+      console.warn('[Editor] HTML 格式化失败，返回原始 HTML:', err)
+      return html
+    }
+  }
+
+  // HTML 压缩（单行）- 保存时使用
+  const compressHtml = (html: string): string => {
+    return html
+      .replace(/\n\s*/g, ' ')      // 换行+缩进 → 空格（保留标签属性间的分隔）
+      .replace(/\s+/g, ' ')        // 压缩连续空格为单个空格
+      .replace(/>\s+</g, '><')     // 移除标签间空格
+      .trim()
   }
 
   // 从 Base64 数据 URL 创建 Blob
@@ -435,14 +453,17 @@ export default function TipTapEditor({
   const enterSourceMode = useCallback(() => {
     if (!editor) return
     const html = editor.getHTML()
-    setSourceCode(html)
+    const formattedHtml = formatHtml(html)  // ✨ 自动格式化
+    setSourceCode(formattedHtml)
     setIsSourceMode(true)
   }, [editor])
 
   // 退出源代码模式
   const exitSourceMode = useCallback(() => {
     if (!editor) return
-    editor.commands.setContent(sourceCode)
+    const compressedHtml = compressHtml(sourceCode)  // ✨ 压缩为一行
+    const sanitizedHtml = sanitizeHtml(compressedHtml)  // ✨ 再次清洗并修复HTML结构
+    editor.commands.setContent(sanitizedHtml)
     setIsSourceMode(false)
   }, [editor, sourceCode])
 
