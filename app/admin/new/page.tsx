@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import TipTapEditor from '@/components/TipTapEditor'
-import { slugify } from '@/lib/utils'
 
 interface PostFormData {
   title: string
@@ -51,7 +50,6 @@ export default function NewPostPage() {
 
     setSaving(true)
     try {
-      const slug = slugify(formData.title)
       const response = await fetch('/api/posts', {
         method: 'POST',
         headers: {

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
 
 interface SearchBarProps {
-  onSearch: (query: string) => void
+  onSearch: (_query: string) => void
   placeholder?: string
 }
 

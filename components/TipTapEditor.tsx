@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -25,7 +26,7 @@ interface TipTapEditorProps {
 }
 
 export default function TipTapEditor({
-  content = '',
+  content: initialContent = '',
   onChange,
   placeholder = '开始写作...',
 }: TipTapEditorProps) {
@@ -91,7 +92,7 @@ export default function TipTapEditor({
         placeholder,
       }),
     ],
-    content,
+    content: initialContent,
     editorProps: {
       attributes: {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',

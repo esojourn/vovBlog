@@ -43,15 +43,11 @@ print_success "🚀 开始部署 VovBlog 到 Vercel"
 # 检查必需的命令
 print_info "检查环境..."
 check_command "node"
-check_command "npm"
+check_command "bun"
 check_command "git"
 
-# 检查 Vercel CLI
-if ! command -v vercel &> /dev/null; then
-    print_warning "Vercel CLI 未安装，正在安装..."
-    npm install -g vercel
-    print_success "Vercel CLI 安装完成"
-fi
+# Vercel CLI 将通过 bunx 运行，无需全局安装
+print_info "Vercel CLI 将通过 bunx 运行"
 
 # 检查 .env.local 文件
 if [ ! -f ".env.local" ]; then
@@ -66,18 +62,18 @@ if [ ! -f ".env.local" ]; then
 fi
 
 # 检查依赖是否安装
-if [ ! -d "node_modules" ] || [ ! -f "node_modules/.package-lock.json" ]; then
+if [ ! -d "node_modules" ] || [ ! -f "bun.lock" ]; then
     print_info "安装依赖..."
-    npm install
+    bun install
 fi
 
 # 检查代码格式
 print_info "检查代码格式..."
-npm run lint
+bun run lint
 
 # 运行构建测试
 print_info "测试构建..."
-npm run build
+bun run build
 
 # 询问是否推送代码到 Git
 if git diff --quiet && git diff --cached --quiet; then
@@ -118,13 +114,13 @@ read -p "请输入选择 (1-2): " deploy_mode
 
 if [ "$deploy_mode" = "1" ]; then
     print_info "部署到生产环境..."
-    vercel --prod
+    bunx vercel --prod
 elif [ "$deploy_mode" = "2" ]; then
     print_info "部署到预览环境..."
-    vercel
+    bunx vercel
 else
     print_warning "无效选择，使用默认预览部署..."
-    vercel
+    bunx vercel
 fi
 
 print_success "✅ 部署完成！"

@@ -33,6 +33,7 @@ export async function getAllPosts(): Promise<Post[]> {
     return posts
       .filter((post): post is Post => post !== null)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   } catch (error) {
     return []
   }
@@ -54,6 +55,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       published: data.published !== false,
       description: data.description || '',
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   } catch (error) {
     return null
   }

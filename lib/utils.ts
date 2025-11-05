@@ -57,7 +57,7 @@ export function slugify(text: string): string {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, '-')         // 空格替换为-
-    .replace(/[^\w\-]+/g, '-')    // 移除特殊字符并替换为-
-    .replace(/\-\-+/g, '-')       // 多个-替换为单个-
-    .replace(/^\-+|\-+$/g, '');   // 移除首尾的-
+    .replace(/[^\w-]+/g, '-')     // 移除特殊字符并替换为-
+    .replace(/--+/g, '-')         // 多个-替换为单个-
+    .replace(/^-+|-+$/g, '');     // 移除首尾的-
 }

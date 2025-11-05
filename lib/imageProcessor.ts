@@ -203,7 +203,7 @@ export async function uploadImageFile(file: File): Promise<string> {
  */
 export async function processHtmlWithImages(
   htmlString: string,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (_current: number, _total: number) => void
 ): Promise<string> {
   // 验证HTML字符串
   if (!htmlString || typeof htmlString !== 'string') {

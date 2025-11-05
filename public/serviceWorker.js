@@ -4,7 +4,7 @@
 const CACHE_NAME = 'vovblog-v1';
 
 // 安装事件
-self.addEventListener('install', (event) => {
+self.addEventListener('install', (_event) => {
   console.log('Service Worker 已安装');
   self.skipWaiting();
 });

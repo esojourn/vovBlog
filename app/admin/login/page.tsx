@@ -33,6 +33,7 @@ export default function AdminLogin() {
 
       // 登录成功，重定向到管理页面
       router.push('/admin')
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
     } catch (err) {
       setError('网络错误，请重试')
       setLoading(false)

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import TipTapEditor from '@/components/TipTapEditor'
-import { slugify } from '@/lib/utils'
 import { Post } from '@/lib/posts'
 
 interface PostFormData {
