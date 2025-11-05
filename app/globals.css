@@ -151,3 +151,60 @@
   height: 0;
   pointer-events: none;
 }
+
+/* 源代码编辑器样式 */
+.source-code-editor {
+  @apply bg-white border border-border rounded font-mono text-sm;
+}
+
+.source-code-editor textarea {
+  @apply w-full p-3 font-mono text-sm resize-none focus:outline-none;
+  background-color: #f9f9f9;
+  line-height: 1.6;
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+
+/* HTML 语法高亮颜色 */
+.hljs {
+  background: #f9f9f9;
+  color: #333;
+}
+
+.hljs-tag {
+  color: #d63384; /* 红色 - HTML标签 */
+  font-weight: 600;
+}
+
+.hljs-attr {
+  color: #0c63e4; /* 蓝色 - 属性名 */
+}
+
+.hljs-string {
+  color: #198754; /* 绿色 - 属性值 */
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #0c63e4; /* 蓝色 - 数字 */
+}
+
+.hljs-comment {
+  color: #6c757d; /* 灰色 - 注释 */
+  font-style: italic;
+}
+
+.hljs-name {
+  color: #d63384; /* 红色 - 元素名称 */
+  font-weight: 600;
+}
+
+.hljs-template-variable {
+  color: #0c63e4; /* 蓝色 - 模板变量 */
+}
+
+.hljs-keyword {
+  color: #6f42c1; /* 紫色 - 关键字 */
+  font-weight: 600;
+}
+

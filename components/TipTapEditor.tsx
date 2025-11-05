@@ -7,6 +7,9 @@ import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useCallback, useState } from 'react'
 import DOMPurify from 'dompurify'
+import hljs from 'highlight.js/lib/core'
+import html from 'highlight.js/lib/languages/xml'
+import 'highlight.js/styles/atom-one-light.css'
 import {
   Bold,
   Italic,
@@ -16,8 +19,11 @@ import {
   Heading2,
   Heading3,
   ImageIcon,
+  FileCode,
   Loader2,
 } from 'lucide-react'
+
+hljs.registerLanguage('html', html)
 
 interface TipTapEditorProps {
   content?: string
@@ -37,6 +43,8 @@ export default function TipTapEditor({
 }: TipTapEditorProps) {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null)
+  const [isSourceMode, setIsSourceMode] = useState(false)
+  const [sourceCode, setSourceCode] = useState('')
 
   const sanitizeHtml = (html: string) => {
     // 第一步：DOMPurify清理危险标签和属性
@@ -277,7 +285,7 @@ export default function TipTapEditor({
     async (html: string, editorInstance: any) => {
       if (!editorInstance) return
 
-      const MAX_BATCH_SIZE = 5
+      const MAX_BATCH_SIZE = 10
 
       try {
         // 解析 HTML
@@ -422,6 +430,21 @@ export default function TipTapEditor({
       onChange?.(sanitizedHtml)
     },
   })
+
+  // 进入源代码模式
+  const enterSourceMode = useCallback(() => {
+    if (!editor) return
+    const html = editor.getHTML()
+    setSourceCode(html)
+    setIsSourceMode(true)
+  }, [editor])
+
+  // 退出源代码模式
+  const exitSourceMode = useCallback(() => {
+    if (!editor) return
+    editor.commands.setContent(sourceCode)
+    setIsSourceMode(false)
+  }, [editor, sourceCode])
 
   const handleImageUpload = useCallback(
     async (file: File) => {
@@ -593,10 +616,53 @@ export default function TipTapEditor({
             <ImageIcon className="w-4 h-4" />
           )}
         </button>
+
+        <div className="w-px bg-border mx-1" />
+
+        <button
+          type="button"
+          onClick={() => {
+            if (isSourceMode) {
+              exitSourceMode()
+            } else {
+              enterSourceMode()
+            }
+          }}
+          className={`p-2 rounded hover:bg-background ${
+            isSourceMode ? 'bg-background' : ''
+          }`}
+          title={isSourceMode ? '所见即所得模式' : '源代码模式'}
+        >
+          <FileCode className="w-4 h-4" />
+        </button>
       </div>
 
       {/* 编辑器内容 */}
-      <EditorContent editor={editor} className="min-h-[400px]" />
+      {isSourceMode ? (
+        <div className="bg-white min-h-[400px] p-4 font-mono text-sm overflow-hidden flex flex-col">
+          <textarea
+            value={sourceCode}
+            onChange={(e) => setSourceCode(e.target.value)}
+            className="flex-1 w-full border border-border rounded p-3 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+            spellCheck="false"
+            style={{
+              whiteSpace: 'pre',
+              overflowWrap: 'normal',
+            }}
+          />
+          <div className="mt-2 flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={exitSourceMode}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            >
+              应用更改
+            </button>
+          </div>
+        </div>
+      ) : (
+        <EditorContent editor={editor} className="min-h-[400px]" />
+      )}
 
       {uploading && (
         <div className="p-2 text-sm text-muted-foreground bg-muted border-t">
