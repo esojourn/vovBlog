@@ -11,6 +11,11 @@ const nextConfig = {
   turbopack: {
     root: '.',
   },
+  outputFileTracingIncludes: {
+    '/': ['./content/**/*'],
+    '/api/**': ['./content/**/*'],
+    '/blog/**': ['./content/**/*'],
+  },
 }
 
 module.exports = nextConfig
