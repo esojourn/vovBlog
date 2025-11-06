@@ -1,0 +1,44 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Settings } from 'lucide-react'
+
+export function AdminLink() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    // 检查认证状态
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/check')
+        setIsAuthenticated(response.ok)
+      } catch {
+        setIsAuthenticated(false)
+      }
+    }
+
+    checkAuth()
+  }, [])
+
+  // 等待认证状态检查完成
+  if (isAuthenticated === null) {
+    return null
+  }
+
+  // 未认证时不显示
+  if (!isAuthenticated) {
+    return null
+  }
+
+  return (
+    <Link
+      href="/admin"
+      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+      title="进入后台管理"
+    >
+      <Settings className="w-4 h-4" />
+      <span className="text-sm font-medium">管理</span>
+    </Link>
+  )
+}

@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { LogoImage } from '@/components/LogoImage'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { AdminLink } from '@/components/AdminLink'
+import { CreateButton } from '@/components/CreateButton'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -39,7 +41,9 @@ export default function RootLayout({
                     瓦器 WaQi.uk . 本站原创内容采用 CC0 协议，放弃所有版权，可自由使用。
                     转载文章版权归原作者所有。
                   </p>
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 flex items-center gap-4">
+                    <CreateButton />
+                    <AdminLink />
                     <ThemeToggle />
                   </div>
                 </div>

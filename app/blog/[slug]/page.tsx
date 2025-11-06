@@ -4,6 +4,7 @@ import { MDXRemote } from 'next-mdx-remote/rsc'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
 import { Calendar, Clock, Tag, FolderOpen } from 'lucide-react'
 import Link from 'next/link'
+import { EditButton } from '@/components/EditButton'
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -47,6 +48,7 @@ export default async function BlogPostPage({
       {/* 文章头部 */}
       <header className="mb-8">
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+        <EditButton slug={slug} />
 
         <div className="flex flex-wrap gap-4 text-muted-foreground mb-6">
           <div className="flex items-center gap-1">
