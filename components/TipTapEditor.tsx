@@ -5,6 +5,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
+import { Markdown } from 'tiptap-markdown'
 import { useCallback, useState } from 'react'
 import DOMPurify from 'dompurify'
 import { html as beautifyHtml } from 'js-beautify'
@@ -398,6 +399,15 @@ export default function TipTapEditor({
       }),
       Placeholder.configure({
         placeholder,
+      }),
+      Markdown.configure({
+        html: true,                  // 允许 HTML（保留图片上传功能）
+        tightLists: true,            // 紧凑列表
+        bulletListMarker: '-',       // 无序列表标记
+        linkify: false,              // 不自动转换 URL
+        breaks: false,               // 换行不转为 <br>
+        transformPastedText: true,   // ✨ 粘贴 Markdown 文本时自动转换
+        transformCopiedText: false,  // 复制保持富文本格式（不转 Markdown）
       }),
     ],
     content: initialContent,

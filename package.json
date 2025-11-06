@@ -34,7 +34,8 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "^2.6.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "tiptap-markdown": "^0.9.0"
   },
   "devDependencies": {
     "@types/js-beautify": "^1.14.3",
