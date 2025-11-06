@@ -14,6 +14,7 @@ interface PostFormData {
   description: string
   date: string
   source: string
+  originalUrl: string
 }
 
 export default function EditPostPage() {
@@ -30,10 +31,14 @@ export default function EditPostPage() {
     description: '',
     date: '',
     source: '"瓦器微声"公众号',
+    originalUrl: '',
   })
   const [tagInput, setTagInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
+  const [importUrl, setImportUrl] = useState('')
 
   useEffect(() => {
     fetchPost()
@@ -55,13 +60,103 @@ export default function EditPostPage() {
         description: post.description || '',
         date: post.date,
         source: post.source || '"瓦器微声"公众号',
+        originalUrl: post.originalUrl || '',
       })
+      if (post.originalUrl) {
+        setImportUrl(post.originalUrl)
+      }
     } catch (error) {
       console.error('获取文章失败:', error)
       alert('获取文章失败')
       router.push('/admin')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleImportArticle = async () => {
+    if (!importUrl.trim()) {
+      setImportError('请输入原文链接')
+      return
+    }
+
+    setImporting(true)
+    setImportError('')
+
+    try {
+      console.log('[Import] 开始导入:', importUrl)
+
+      const response = await fetch('/api/fetch-wechat-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl }),
+      })
+
+      if (!response.ok) {
+        throw new Error('导入请求失败')
+      }
+
+      const data = await response.json()
+
+      if (data.error) {
+        setImportError(data.error)
+        return
+      }
+
+      console.log('[Import] 导入成功，原始内容:', data)
+
+      // 如果有图片 URL，使用代理上传
+      let processedContent = data.content || ''
+      if (data.images && data.images.length > 0) {
+        console.log('[Import] 开始上传图片:', data.images)
+        try {
+          const uploadResponse = await fetch('/api/proxy-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrls: data.images.slice(0, 5) }), // 最多 5 张
+          })
+
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json()
+            console.log('[Import] 图片上传结果:', uploadData)
+
+            // 替换 HTML 中的图片 URL
+            if (uploadData.results) {
+              uploadData.results.forEach((result: any, index: number) => {
+                if (result.url && data.images[index]) {
+                  const originalUrl = data.images[index]
+                  processedContent = processedContent.replace(
+                    new RegExp(originalUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+                    result.url
+                  )
+                  console.log(`[Import] 已替换图片 ${index + 1}/${data.images.length}`)
+                }
+              })
+            }
+          } else {
+            console.warn('[Import] 图片上传失败，继续使用原始 URL')
+          }
+        } catch (err) {
+          console.warn('[Import] 图片上传异常:', err)
+          // 继续使用原始 URL
+        }
+      }
+
+      // 填充表单数据
+      setFormData((prev) => ({
+        ...prev,
+        title: data.title || prev.title,
+        content: processedContent || prev.content,
+        originalUrl: importUrl,
+      }))
+
+      alert('✅ 文章导入成功！请检查并编辑后再发布')
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : '导入失败'
+      console.error('[Import] 错误:', error)
+      setImportError(`导入失败: ${errorMsg}`)
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -135,6 +230,40 @@ export default function EditPostPage() {
       </div>
 
       <div className="space-y-6">
+        {/* 原文链接导入 */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            原文链接（微信公众号）
+          </label>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={importUrl}
+              onChange={(e) => {
+                setImportUrl(e.target.value)
+                setImportError('')
+              }}
+              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="粘贴微信公众号文章链接... (mp.weixin.qq.com)"
+              disabled={importing}
+            />
+            <button
+              type="button"
+              onClick={handleImportArticle}
+              disabled={importing}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {importing ? '导入中...' : '导入'}
+            </button>
+          </div>
+          {importError && (
+            <p className="text-sm text-red-600 mt-1">{importError}</p>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            ℹ️ 自动导入标题、正文和图片，导入后可继续编辑
+          </p>
+        </div>
+
         {/* 标题 */}
         <div>
           <label className="block text-sm font-medium mb-2">

@@ -6,7 +6,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown } from 'tiptap-markdown'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import DOMPurify from 'dompurify'
 import { html as beautifyHtml } from 'js-beautify'
 import hljs from 'highlight.js/lib/core'
@@ -458,6 +458,18 @@ export default function TipTapEditor({
       onChange?.(sanitizedHtml)
     },
   })
+
+  // 🔧 当 content prop 变化时，更新编辑器内容
+  useEffect(() => {
+    if (editor && initialContent && initialContent.length > 0) {
+      // 检查编辑器当前内容是否为空或与新内容不同
+      const currentContent = editor.getHTML()
+      if (currentContent !== initialContent) {
+        console.log('[Editor] 检测到内容更新，使用 setContent 更新编辑器')
+        editor.commands.setContent(initialContent, false)
+      }
+    }
+  }, [editor, initialContent])
 
   // 进入源代码模式
   const enterSourceMode = useCallback(() => {
