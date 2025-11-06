@@ -91,8 +91,13 @@ export default async function BlogPostPage({
         <MDXRemote source={post.content} />
       </div>
 
+      {/* 文章来源 */}
+      <div className="mt-12 pt-8 border-t text-muted-foreground">
+        <p>文章来源：{post.source}</p>
+      </div>
+
       {/* 返回首页 */}
-      <div className="mt-12 pt-8 border-t">
+      <div className="mt-8">
         <Link
           href="/"
           className="text-primary hover:underline"

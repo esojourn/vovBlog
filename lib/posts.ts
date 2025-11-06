@@ -9,6 +9,7 @@ export interface PostMeta {
   category?: string
   published?: boolean
   description?: string
+  source?: string
 }
 
 export interface Post extends PostMeta {
@@ -54,6 +55,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       category: data.category || '',
       published: data.published !== false,
       description: data.description || '',
+      source: data.source || '"瓦器微声"公众号',
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   } catch (error) {

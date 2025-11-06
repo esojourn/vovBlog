@@ -13,6 +13,7 @@ interface PostFormData {
   published: boolean
   description: string
   date: string
+  source: string
 }
 
 export default function EditPostPage() {
@@ -28,6 +29,7 @@ export default function EditPostPage() {
     published: false,
     description: '',
     date: '',
+    source: '"瓦器微声"公众号',
   })
   const [tagInput, setTagInput] = useState('')
   const [saving, setSaving] = useState(false)
@@ -52,6 +54,7 @@ export default function EditPostPage() {
         published: post.published !== false,
         description: post.description || '',
         date: post.date,
+        source: post.source || '"瓦器微声"公众号',
       })
     } catch (error) {
       console.error('获取文章失败:', error)
@@ -176,6 +179,21 @@ export default function EditPostPage() {
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="例如：技术、生活、随笔..."
           />
+        </div>
+
+        {/* 文章来源 */}
+        <div>
+          <label className="block text-sm font-medium mb-2">文章来源</label>
+          <select
+            value={formData.source}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, source: e.target.value }))
+            }
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value='"瓦器微声"公众号'>"瓦器微声"公众号</option>
+            <option value="原创">原创</option>
+          </select>
         </div>
 
         {/* 标签 */}
