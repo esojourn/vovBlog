@@ -12,7 +12,13 @@
       "Bash(lsof:*)",
       "mcp__Playwright__browser_navigate",
       "mcp__Playwright__browser_close",
-      "mcp__Playwright__browser_tabs"
+      "mcp__Playwright__browser_tabs",
+      "WebFetch(domain:mp.weixin.qq.com)",
+      "WebFetch(domain:www.waqi.uk)",
+      "Bash(git checkout:*)",
+      "Bash(bun run build:*)",
+      "Read(//root/.cache/ms-playwright/**)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
