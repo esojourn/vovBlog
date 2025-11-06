@@ -1,6 +1,14 @@
-# VovBlog
+# VovBlog - Voice of Vessel
 
-一个基于 Next.js 16、TipTap 编辑器和 Cloudinary 构建的现代化博客系统。
+为了转载保留一些公众号的文章，我开发了这个程序。
+这是一个基于 Next.js 16、TipTap 编辑器和 Cloudinary 构建的博客系统。
+
+- 使用免费的Vercel / Cloudinary额度，足够个人用户使用。
+- 使用Cloudinary，兼顾墙内浏览速度。并且无需复杂的实名注册流程。
+
+实例预览：https://www.waqi.uk/
+
+
 
 ## 🚀 快速开始
 
@@ -23,34 +31,35 @@
 
 ### 1. 安装依赖
 
-\`\`\`bash
+```bash
 # 安装bun
 curl -fsSL https://bun.com/install | bash
-
 bun install
-\`\`\`
+```
 
 ### 2. 配置环境变量
 
 复制 `.env.local.example` 为 `.env.local`：
 
-\`\`\`bash
+```bash
 cp .env.local.example .env.local
-\`\`\`
+```
 
 然后填入您的 Cloudinary 凭据（从 https://cloudinary.com/console 获取）：
 
-\`\`\`env
+```env
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-\`\`\`
+
+ADMIN_PASSWORD=password
+```
 
 ### 3. 启动开发服务器
 
-\`\`\`bash
+```bash
 bun run dev
-\`\`\`
+```
 
 访问 `http://localhost:3000` 查看您的博客。
 
@@ -95,7 +104,7 @@ bun run deploy
 
 ## 🎯 项目结构
 
-\`\`\`
+```
 VovBlog/
 ├── app/                    # Next.js App Router
 │   ├── admin/             # 管理后台
@@ -113,7 +122,7 @@ VovBlog/
 │   ├── posts.ts          # 文章管理
 │   └── search.ts         # 搜索功能
 └── content/posts/         # MDX 文章文件
-\`\`\`
+```
 
 ## 📝 使用指南
 
@@ -162,6 +171,7 @@ VovBlog/
 5. 点击部署
 
 部署完成后，您的博客将在 `https://your-project.vercel.app` 上线。
+使用自己的域名，指向vercel项目，即可墙内访问。
 
 ## 🔧 环境变量说明
 
@@ -171,6 +181,7 @@ VovBlog/
 | `CLOUDINARY_API_KEY` | Cloudinary API Key | 是 |
 | `CLOUDINARY_API_SECRET` | Cloudinary API Secret | 是 |
 | `NEXT_PUBLIC_SITE_URL` | 网站 URL（用于 SEO） | 否 |
+| `ADMIN_PASSWORD` | 管理员密码 | 是 |
 
 ## 📄 许可证
 
