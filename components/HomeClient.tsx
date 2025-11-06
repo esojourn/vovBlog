@@ -36,7 +36,7 @@ export default function HomeClient({
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-4">文章列表</h1>
+        {/* <h1 className="text-4xl font-bold mb-4">文章列表</h1> */}
         <SearchBar onSearch={setSearchQuery} />
       </div>
 
