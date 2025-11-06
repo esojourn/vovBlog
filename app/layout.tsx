@@ -8,8 +8,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'VovBlog - 个人博客',
-  description: '一个简洁优雅的个人博客系统',
+  title: '瓦器 WaQi.uk',
+  description: '充满瑕疵的脆弱器皿',
 }
 
 export default function RootLayout({

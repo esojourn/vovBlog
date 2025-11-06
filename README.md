@@ -24,6 +24,9 @@
 ### 1. 安装依赖
 
 \`\`\`bash
+# 安装bun
+curl -fsSL https://bun.com/install | bash
+
 bun install
 \`\`\`
 

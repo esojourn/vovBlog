@@ -5,7 +5,14 @@
       "Bash(npm run dev:*)",
       "Bash(curl:*)",
       "Bash(npm run build:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(identify:*)",
+      "Read(//tmp/**)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "mcp__Playwright__browser_navigate",
+      "mcp__Playwright__browser_close",
+      "mcp__Playwright__browser_tabs"
     ],
     "deny": [],
     "ask": []

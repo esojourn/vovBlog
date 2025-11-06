@@ -7,6 +7,8 @@ const nextConfig = {
         hostname: 'res.cloudinary.com',
       },
     ],
+    // 支持更高质量的图像输出
+    qualities: [75, 90],
   },
   turbopack: {
     root: '.',
