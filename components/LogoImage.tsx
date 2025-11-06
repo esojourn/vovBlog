@@ -2,7 +2,6 @@
 
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 
 export function LogoImage() {
@@ -14,8 +13,9 @@ export function LogoImage() {
   }, []);
 
   // 根据主题选择 logo
-  const logoSrc = theme === 'dark' ? '/images/Logo-light.png' : '/images/Logo-dark.png';
-  const altText = theme === 'dark' ? 'VovBlog Logo Light' : 'VovBlog Logo Dark';
+  const isDark = theme === 'dark';
+  const logoSrc = isDark ? '/images/Logo-light.png' : '/images/Logo-dark.png';
+  const altText = isDark ? 'VovBlog Logo Light' : 'VovBlog Logo Dark';
 
   // 防止 hydration 不匹配，未挂载时显示默认 logo
   const displaySrc = mounted ? logoSrc : '/images/Logo-dark.png';
@@ -23,13 +23,12 @@ export function LogoImage() {
 
   return (
     <Link href="/" className="hover:opacity-80 transition-opacity">
-      <Image
+      <img
+        key={displaySrc}
         src={displaySrc}
         alt={displayAlt}
-        width={192}
-        height={192}
-        priority
-        className="h-48 w-auto"
+        className="h-16 sm:h-20 md:h-24 lg:h-32 w-auto"
+        style={{ display: mounted ? 'block' : 'none' }}
       />
     </Link>
   );
