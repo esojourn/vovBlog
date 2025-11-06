@@ -8,7 +8,7 @@
 - ✨✨ 使用免费的 Vercel / Cloudinary 额度，足够个人用户使用。
 - ✨ 使用 Cloudinary，兼顾墙内浏览速度。并且无需复杂的实名注册流程。
 
-实例预览：https://www.waqi.uk/
+实例预览：https://vov-blog.vercel.app
 
 
 
