@@ -40,6 +40,25 @@ export default function HomeClient({
         <SearchBar onSearch={setSearchQuery} />
       </div>
 
+      {/* 文章列表 */}
+      {filteredPosts.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-muted-foreground text-lg">暂无文章</p>
+          <p className="text-muted-foreground mt-2">
+            <a href="/admin/new" className="text-primary hover:underline">
+              去创建第一篇文章
+            </a>
+          </p>
+        </div>
+      ) : (
+        <div className="mb-8 grid gap-6">
+          {filteredPosts.map((post) => (
+            <PostCard key={post.slug} post={post} />
+          ))}
+        </div>
+      )}
+
+
       {/* 分类筛选 */}
       {allCategories.length > 0 && (
         <div className="mb-6">
@@ -104,23 +123,6 @@ export default function HomeClient({
         </div>
       )}
 
-      {/* 文章列表 */}
-      {filteredPosts.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-muted-foreground text-lg">暂无文章</p>
-          <p className="text-muted-foreground mt-2">
-            <a href="/admin/new" className="text-primary hover:underline">
-              去创建第一篇文章
-            </a>
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-6">
-          {filteredPosts.map((post) => (
-            <PostCard key={post.slug} post={post} />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
