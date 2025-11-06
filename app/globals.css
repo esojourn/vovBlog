@@ -208,3 +208,56 @@
   font-weight: 600;
 }
 
+/* 深色模式下的 prose 文字颜色 */
+.dark .prose {
+  @apply text-foreground;
+}
+
+.dark .prose p,
+.dark .prose li,
+.dark .prose dd,
+.dark .prose dt {
+  @apply text-foreground;
+}
+
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4,
+.dark .prose h5,
+.dark .prose h6 {
+  @apply text-foreground;
+}
+
+.dark .prose strong {
+  @apply text-foreground font-bold;
+}
+
+.dark .prose em {
+  @apply text-foreground italic;
+}
+
+.dark .prose code {
+  @apply text-foreground bg-muted px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.dark .prose pre {
+  @apply bg-muted text-foreground;
+}
+
+.dark .prose blockquote {
+  @apply text-foreground border-l-4 border-primary pl-4 italic;
+}
+
+.dark .prose table {
+  @apply text-foreground;
+}
+
+.dark .prose tbody tr {
+  @apply border-border;
+}
+
+.dark .prose tbody tr:nth-child(odd) {
+  @apply bg-card;
+}
+
