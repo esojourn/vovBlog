@@ -5,6 +5,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
+import Highlight from '@tiptap/extension-highlight'
 import { Markdown } from 'tiptap-markdown'
 import { useCallback, useState, useEffect } from 'react'
 import DOMPurify from 'dompurify'
@@ -23,6 +24,7 @@ import {
   ImageIcon,
   FileCode,
   Loader2,
+  Highlighter,
 } from 'lucide-react'
 
 hljs.registerLanguage('html', html)
@@ -49,13 +51,27 @@ export default function TipTapEditor({
   const [sourceCode, setSourceCode] = useState('')
 
   const sanitizeHtml = (html: string) => {
-    // 第一步：DOMPurify清理危险标签和属性
-    // 移除所有微信特定属性和样式（data-*、style等）
-    const cleanHtml = DOMPurify.sanitize(html, {
+    // 第一步：识别和转换高亮文本（在 DOMPurify 之前处理，因为 style 会被移除）
+    let htmlWithHighlights = html
+
+    // 转换具有背景色或文字颜色的 span 为 mark 标签
+    htmlWithHighlights = htmlWithHighlights.replace(
+      /<span\s+(?:[^>]*?\s)?style=["'](?:[^"']*?(?:background-color|color)[^"']*?)["'][^>]*>([^<]*)<\/span>/gi,
+      '<mark>$1</mark>'
+    )
+
+    // 转换仅有 style 属性的 span
+    htmlWithHighlights = htmlWithHighlights.replace(
+      /<span\s+style=["'](?:[^"']*?(?:background-color|color)[^"']*?)["'][^>]*>([^<]*)<\/span>/gi,
+      '<mark>$1</mark>'
+    )
+
+    // 第二步：DOMPurify清理危险标签和属性，保留 mark 标签
+    const cleanHtml = DOMPurify.sanitize(htmlWithHighlights, {
       ALLOWED_TAGS: [
         'p', 'br', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'strong', 'em', 'u', 's', 'a', 'ul', 'ol', 'li', 'blockquote',
-        'code', 'pre', 'span', 'div'
+        'code', 'pre', 'span', 'div', 'mark'  // 添加 mark 标签
       ],
       ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel'],
       ALLOW_DATA_ATTR: false,
@@ -64,8 +80,28 @@ export default function TipTapEditor({
       KEEP_CONTENT: true,
     })
 
-    // 第二步：HTML结构修复（处理复杂的嵌套错误）
-    let fixedHtml = cleanHtml
+    // 第三步：智能标题识别 - 识别应转为标题的加粗段落
+    let processedHtml = cleanHtml
+
+    // 匹配 <p><strong>文本</strong></p> 的模式
+    processedHtml = processedHtml.replace(
+      /<p><strong>([^<]*?)<\/strong><\/p>/gi,
+      (match, text) => {
+        // 条件：文本长度 < 50 且包含序号（中文序号或数字）
+        const trimmedText = text.trim()
+        const hasNumberPrefix = /^[（(]?[一二三四五六七八九0-9０-９]+[、。.)）]/.test(trimmedText)
+
+        if (trimmedText.length < 50 && hasNumberPrefix) {
+          // 转换为 h2 标题
+          return `<h2>${trimmedText}</h2>`
+        }
+        // 不符合条件，保持原样（但格式化）
+        return `<p><strong>${trimmedText}</strong></p>`
+      }
+    )
+
+    // 第四步：HTML结构修复（处理复杂的嵌套错误）
+    let fixedHtml = processedHtml
 
     // 修复自闭合标签后的错误结束标签（如<img></p>）
     // 注意：保留属性，防止图片 src 丢失
@@ -85,6 +121,17 @@ export default function TipTapEditor({
       .replace(/<br\s*\/?><\/p>/gi, '</p>')
       .replace(/\s+<\/p>/gi, '</p>')
       .replace(/<p>\s+/gi, '<p>')
+
+    // 第五步：过滤多余空行 - 使用更激进的方式
+    // 将连续的 <br /> 和 <p></p> 合并为单个分隔符
+    fixedHtml = fixedHtml
+      .replace(/(<br\s*\/?>\s*){2,}/gi, '<br />') // 连续 br 合并为一个
+      .replace(/(<\/p>\s*<p>)+/gi, '</p><p>') // 多个 p 换行合并
+
+    // 移除开头和结尾的空白行
+    fixedHtml = fixedHtml
+      .replace(/^(<br\s*\/?>\s*)+/i, '')
+      .replace(/(<br\s*\/?>)+$/i, '')
 
     return fixedHtml
   }
@@ -400,6 +447,9 @@ export default function TipTapEditor({
       Placeholder.configure({
         placeholder,
       }),
+      Highlight.configure({
+        multicolor: false,  // 统一样式，不保留原颜色
+      }),
       Markdown.configure({
         html: true,                  // 允许 HTML（保留图片上传功能）
         tightLists: true,            // 紧凑列表
@@ -641,6 +691,19 @@ export default function TipTapEditor({
           title="有序列表"
         >
           <ListOrdered className="w-4 h-4" />
+        </button>
+
+        <div className="w-px bg-border mx-1" />
+
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          className={`p-2 rounded hover:bg-background ${
+            editor.isActive('highlight') ? 'bg-background' : ''
+          }`}
+          title="高亮"
+        >
+          <Highlighter className="w-4 h-4" />
         </button>
 
         <div className="w-px bg-border mx-1" />

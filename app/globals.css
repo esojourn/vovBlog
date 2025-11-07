@@ -146,6 +146,21 @@
   @apply text-primary underline;
 }
 
+/* TipTap Highlight 样式 */
+.ProseMirror mark {
+  background-color: #fef08a;  /* 明亮黄色高亮 */
+  color: inherit;             /* 保持原有文字颜色 */
+  padding: 0.1em 0.2em;
+  border-radius: 0.2em;
+  font-weight: 500;
+}
+
+/* 暗色模式下的高亮样式 */
+.dark .ProseMirror mark {
+  background-color: #ca8a04;  /* 深黄色高亮（暗色模式） */
+  color: #f5f5f4;             /* 浅色文字保证对比度 */
+}
+
 .ProseMirror p.is-editor-empty:first-child::before {
   @apply text-muted-foreground;
   content: attr(data-placeholder);
