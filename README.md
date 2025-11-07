@@ -10,7 +10,7 @@
 
 ## 🚀 快速开始
 
-[![[assets/WaQi-vov-blog/3a5a2a79f8d5f90c1d389afef54eaf98_MD5.svg]]](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fesojourn%2FvovBlog)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fesojourn%2FvovBlog)
 获取 Cloudinary API Key：https://cloudinary.com
 点击 "Deploy with Vercel"，设置环境变量；开始使用吧！ 😎👍
 

@@ -127,7 +127,7 @@
 }
 
 .ProseMirror pre code {
-  @apply bg-transparent p-0;
+  @apply bg-transparent p-0 text-foreground;
 }
 
 .ProseMirror img {
@@ -206,6 +206,15 @@
 .hljs-keyword {
   color: #6f42c1; /* 紫色 - 关键字 */
   font-weight: 600;
+}
+
+/* prose 代码块样式 - 亮色模式 */
+.prose pre {
+  @apply bg-muted text-foreground;
+}
+
+.prose code {
+  @apply text-foreground;
 }
 
 /* 深色模式下的 prose 文字颜色 */
