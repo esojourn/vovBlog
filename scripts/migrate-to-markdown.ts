@@ -20,6 +20,17 @@ interface MigrationResult {
 }
 
 /**
+ * 🔧 修正文本中的多余空格
+ */
+function fixSpaces(text: string): string {
+  return text
+    .replace(/属\s+灵/g, '属灵')
+    .replace(/恩\s+赐/g, '恩赐')
+    .replace(/宣\s+教/g, '宣教')
+    .replace(/教\s+会/g, '教会')
+}
+
+/**
  * 检查内容是否是 Markdown
  * 简单启发式：Markdown 通常包含 #、**、- 等标记，而 HTML 包含 < >
  */
@@ -75,7 +86,10 @@ function htmlToMarkdown(html: string): string {
   })
 
   try {
-    return turndownService.turndown(html)
+    let markdown = turndownService.turndown(html)
+    // 🔧 新增：应用空格修正规则
+    markdown = fixSpaces(markdown)
+    return markdown
   } catch (err) {
     console.error('Turndown 转换失败:', err)
     throw err
@@ -94,10 +108,28 @@ async function migrateFile(filePath: string): Promise<{ success: boolean; messag
     const { data, content } = matter(fileContents)
 
     // 检查是否已经是 Markdown
-    if (isMarkdown(content)) {
-      return {
-        success: true,
-        message: `⏭️  ${fileName} - 已经是 Markdown，跳过`,
+    const isAlreadyMarkdown = isMarkdown(content)
+    let processedContent = content
+
+    if (isAlreadyMarkdown) {
+      // 🔧 新增：即使已经是 Markdown，也应用空格修正规则
+      processedContent = fixSpaces(content)
+
+      // 检查是否有变化
+      if (processedContent === content) {
+        return {
+          success: true,
+          message: `⏭️  ${fileName} - 已经是 Markdown，跳过`,
+        }
+      } else {
+        // 有改动，需要保存
+        console.log(`🔧 修正 ${fileName} 中的空格...`)
+        const migrated = matter.stringify(processedContent, data)
+        await fs.writeFile(filePath, migrated, 'utf8')
+        return {
+          success: true,
+          message: `✨ ${fileName} - 已修正空格`,
+        }
       }
     }
 

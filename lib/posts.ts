@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import matter from 'gray-matter'
+import TurndownService from 'turndown'
 
 export interface PostMeta {
   title: string
@@ -19,6 +20,34 @@ export interface Post extends PostMeta {
 }
 
 const postsDirectory = path.join(process.cwd(), 'content/posts')
+
+// 🔧 HTML 检测和转换函数
+function isHtmlContent(content: string): boolean {
+  return /<[a-z][^>]*>/i.test(content.trim())
+}
+
+// 🔧 修正文本中的多余空格
+function fixSpaces(text: string): string {
+  return text
+    .replace(/属\s+灵/g, '属灵')
+    .replace(/恩\s+赐/g, '恩赐')
+    .replace(/宣\s+教/g, '宣教')
+    .replace(/教\s+会/g, '教会')
+}
+
+function convertToMarkdown(html: string): string {
+  const turndownService = new TurndownService({
+    headingStyle: 'atx',
+    hr: '---',
+    bulletListMarker: '-',
+    codeBlockStyle: 'fenced',
+  })
+
+  let markdown = turndownService.turndown(html)
+  // 应用空格修正规则
+  markdown = fixSpaces(markdown)
+  return markdown
+}
 
 export async function getAllPosts(): Promise<Post[]> {
   try {
@@ -66,7 +95,19 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function savePost(slug: string, post: Omit<Post, 'slug'>): Promise<void> {
-  const { content, ...meta } = post
+  let { content, ...meta } = post
+
+  // 🔧 新增：格式检测和转换
+  if (isHtmlContent(content)) {
+    console.warn(`[Posts] 检测到 HTML 格式内容（${slug}），自动转换为 Markdown`)
+    try {
+      content = convertToMarkdown(content)
+      console.log(`[Posts] HTML 转换成功（${slug}）`)
+    } catch (err) {
+      console.warn(`[Posts] HTML 转换失败（${slug}），使用原始内容:`, err)
+    }
+  }
+
   const fileContent = matter.stringify(content, meta)
   const filePath = path.join(postsDirectory, `${slug}.mdx`)
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { chromium } from 'playwright-core'
+import TurndownService from 'turndown'
 
 interface FetchResult {
   title?: string
@@ -69,6 +70,34 @@ function extractImageUrls(html: string): string[] {
     }
   }
   return [...new Set(urls)] // 去重
+}
+
+/**
+ * 🔧 修正文本中的多余空格
+ */
+function fixSpaces(text: string): string {
+  return text
+    .replace(/属\s+灵/g, '属灵')
+    .replace(/恩\s+赐/g, '恩赐')
+    .replace(/宣\s+教/g, '宣教')
+    .replace(/教\s+会/g, '教会')
+}
+
+/**
+ * 🔧 将 HTML 转换为 Markdown
+ */
+function htmlToMarkdown(html: string): string {
+  const turndownService = new TurndownService({
+    headingStyle: 'atx',
+    hr: '---',
+    bulletListMarker: '-',
+    codeBlockStyle: 'fenced',
+  })
+
+  let markdown = turndownService.turndown(html)
+  // 应用空格修正规则
+  markdown = fixSpaces(markdown)
+  return markdown
 }
 
 /**
@@ -298,9 +327,21 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
 
     await context.close()
 
+    // 🔧 新增：将 HTML 内容转换为 Markdown 再返回
+    let markdownContent = content
+    if (content) {
+      try {
+        markdownContent = htmlToMarkdown(content)
+        console.log('[WeChat Fetch] HTML 已转换为 Markdown')
+      } catch (err) {
+        console.warn('[WeChat Fetch] HTML 转换失败，使用原始内容:', err)
+        markdownContent = content
+      }
+    }
+
     return {
       title,
-      content,
+      content: markdownContent,
       images,
       publishDate: publishDate || undefined,
     }

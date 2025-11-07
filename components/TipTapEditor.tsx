@@ -10,6 +10,7 @@ import { Markdown } from 'tiptap-markdown'
 import { useCallback, useState, useEffect } from 'react'
 import DOMPurify from 'dompurify'
 import { html as beautifyHtml } from 'js-beautify'
+import TurndownService from 'turndown'
 import hljs from 'highlight.js/lib/core'
 import html from 'highlight.js/lib/languages/xml'
 import 'highlight.js/styles/atom-one-light.css'
@@ -28,6 +29,33 @@ import {
 } from 'lucide-react'
 
 hljs.registerLanguage('html', html)
+
+// 🔧 HTML 检测和转换函数
+function isHtmlContent(content: string): boolean {
+  return /<[a-z][^>]*>/i.test(content.trim())
+}
+
+// 🔧 修正文本中的多余空格
+function fixSpaces(text: string): string {
+  return text
+    .replace(/属\s+灵/g, '属灵')
+    .replace(/恩\s+赐/g, '恩赐')
+    .replace(/宣\s+教/g, '宣教')
+}
+
+function htmlToMarkdown(html: string): string {
+  const turndownService = new TurndownService({
+    headingStyle: 'atx',
+    hr: '---',
+    bulletListMarker: '-',
+    codeBlockStyle: 'fenced',
+  })
+
+  let markdown = turndownService.turndown(html)
+  // 应用空格修正规则
+  markdown = fixSpaces(markdown)
+  return markdown
+}
 
 interface TipTapEditorProps {
   content?: string
@@ -515,8 +543,22 @@ export default function TipTapEditor({
       // 检查编辑器当前内容是否为空或与新内容不同
       const currentContent = editor.getHTML()
       if (currentContent !== initialContent) {
-        console.log('[Editor] 检测到内容更新，使用 setContent 更新编辑器')
-        editor.commands.setContent(initialContent, false)
+        console.log('[Editor] 检测到内容更新，检查格式...')
+
+        // 🔧 新增：如果内容是 HTML 格式，先转换为 Markdown
+        let contentToSet = initialContent
+        if (isHtmlContent(initialContent)) {
+          console.log('[Editor] 检测到 HTML 格式，自动转换为 Markdown')
+          try {
+            contentToSet = htmlToMarkdown(initialContent)
+            console.log('[Editor] HTML 转换成功')
+          } catch (err) {
+            console.warn('[Editor] HTML 转换失败，使用原始内容:', err)
+            contentToSet = initialContent
+          }
+        }
+
+        editor.commands.setContent(contentToSet, false)
       }
     }
   }, [editor, initialContent])
