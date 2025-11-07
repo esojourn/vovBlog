@@ -62,6 +62,7 @@ bun run dev
 
 ### 核心概念
 - **内容存储**：所有文章保存在 `content/posts/` 目录下，文件格式为 MDX（`.mdx`）
+- **内容格式**：文章内容采用 **Markdown** 格式存储（而非 HTML），便于版本控制、可读性和可维护性
 - **前置元数据**：每个 MDX 文件使用 gray-matter 格式，YAML 前置块包含 title、date、tags、category 等
 - **静态生成与 API**：首页等使用 SSG（Server-Side Generation），API 路由提供动态数据获取和管理
 
@@ -108,8 +109,10 @@ tsconfig.json               # TypeScript 配置（路径别名 @/* -> ./）
 
 2. **创建/编辑文章**
    - 在 `/admin/new` 或 `/admin/edit/[slug]` 使用 `TipTapEditor` 组件编写内容
+   - 编辑器使用 TipTap + Markdown 扩展，原生支持 Markdown 输出
    - 点击保存时，通过 API 路由（`/api/posts`）提交 POST/PUT 请求
-   - `lib/posts.ts` 的 `savePost()` 将文章以 MDX 格式保存到文件系统
+   - `lib/posts.ts` 的 `savePost()` 将文章以 **Markdown 格式** 保存到文件系统
+   - 粘贴 HTML 内容（如微信公众号文章）时，自动清洗后导入，编辑器输出 Markdown
 
 3. **图片上传**
    - 编辑器中粘贴、拖拽或点击上传按钮
@@ -122,7 +125,7 @@ tsconfig.json               # TypeScript 配置（路径别名 @/* -> ./）
 
 ## 关键技术细节
 
-### gray-matter 和 MDX 格式
+### gray-matter 和 Markdown 格式
 文章文件格式示例：
 ```mdx
 ---
@@ -136,10 +139,28 @@ published: true
 description: 文章描述
 ---
 
-# 文章内容
+# 文章标题
 
-这里是 MDX 内容...
+这是第一个段落，使用 **Markdown** 格式编写。
+
+## 二级标题
+
+- 这是无序列表项 1
+- 这是无序列表项 2
+
+1. 这是有序列表项 1
+2. 这是有序列表项 2
+
+![图片说明](https://cloudinary-url.com/image.webp)
+
+这是[链接](https://example.com)的示例。
 ```
+
+**说明：**
+- 前置块（YAML）：管理文章元数据（标题、日期、标签等）
+- 内容块：使用标准 **Markdown** 格式，便于版本控制和可读性
+- 图片 URL：指向 Cloudinary CDN（自动上传和优化）
+- MDXRemote 渲染：自动解析 Markdown 并转换为 HTML 显示
 
 ### Cloudinary 集成
 - **配置文件**：`lib/cloudinary.ts`
@@ -148,9 +169,14 @@ description: 文章描述
 - **图片优化**：自动转换为 WebP、限制宽度为 1200px、应用质量压缩
 
 ### TipTap 编辑器配置
-- **扩展**：StarterKit（基础功能）+ Image（图片）+ Placeholder（占位符）
-- **拖拽/粘贴处理**：在 `editorProps.handleDrop` 和 `handlePaste` 中上传图片
+- **扩展**：StarterKit（基础功能）+ Image（图片）+ Placeholder（占位符）+ **Markdown**（输出 Markdown）
+- **输出格式**：使用 `editor.storage.markdown.getMarkdown()` 获取 Markdown 格式内容
+- **拖拽/粘贴处理**：
+  - 在 `editorProps.handleDrop` 和 `handlePaste` 中处理图片上传
+  - 粘贴 HTML 内容时自动清洗（移除危险标签和属性）
+  - TipTap 自动将清洗后的 HTML 转换为 Markdown 导出
 - **样式**：使用 Tailwind 的 prose 类提供优雅的内容排版
+- **源代码模式**：可进入源代码模式查看和编辑 Markdown
 
 ## 环境变量配置
 

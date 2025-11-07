@@ -8,28 +8,21 @@ category: 公告
 published: true
 description: 这是您的第一篇示例文章，展示了 VovBlog 的基本功能。
 source: 原创
+originalUrl: ''
 ---
 
 # VovBlog - Voice of Vessel
 
-为了转载保留一些公众号的文章，我开发了这个程序。
-这是一个基于 Next.js 16、TipTap 编辑器和 Cloudinary 构建的博客系统。
+为了转载保留一些公众号的文章，我开发了这个程序。这是一个基于 Next.js 16、TipTap 编辑器和 Cloudinary 构建的博客系统。
 
 - 使用免费的Vercel / Cloudinary额度，足够个人用户使用。
 - 使用Cloudinary，兼顾墙内浏览速度。并且无需复杂的实名注册流程。
 
 实例预览：https://www.waqi.uk/
 
-
-
-
 ## 🚀 快速开始
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fesojourn%2FvovBlog)
-
-获取 Cloudinary API Key；
-点击 "Deploy with Vercel"，设置 ADMIN_PASSWORD 环境变量作为管理员密码；
-开始使用吧！ :)
+获取 Cloudinary API Key；点击 "Deploy with Vercel"，设置 ADMIN_PASSWORD 环境变量作为管理员密码；开始使用吧！ :)
 
 ## ✨ 特性
 
@@ -64,7 +57,6 @@ cp .env.local.example .env.local
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-
 ADMIN_PASSWORD=password
 ```
 
@@ -96,14 +88,12 @@ bun run deploy
 - `bun run deploy:vercel` - 直接部署到生产环境
 - `bun run deploy:check` - 检查环境变量配置
 
-详细部署指南请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)。
-
 ### 5. 创建文章
 
 - 访问 `/admin/new` 创建新文章
 - 直接粘贴图片到编辑器，自动上传
 - 支持拖拽上传图片
-- 从其他网页复制内容时，自动保留标题格式
+- 从其他网页复制内容时，自动保留格式
 
 ## 📦 技术栈
 
@@ -141,13 +131,13 @@ VovBlog/
 
 ### 创建文章
 
-1. 访问 `/admin` 输入管理员登录密码。
- * 未登录前，管理、创建、编辑按钮都是隐藏状态。
-2. 点击创建，填写标题、描述、分类
-3. 添加标签
-4. 在编辑器中写作
-5. 粘贴或拖拽图片（自动上传到 Cloudinary）
-6. 点击"保存草稿"或"发布文章"
+1. 访问 `/admin` 输入管理员登录密码
+2. 未登录前，管理、创建、编辑按钮都是隐藏状态
+3. 点击创建，填写标题、描述、分类
+4. 添加标签
+5. 在编辑器中写作
+6. 粘贴或拖拽图片（自动上传到 Cloudinary）
+7. 点击"保存草稿"或"发布文章"
 
 ### 编辑文章
 
@@ -179,13 +169,12 @@ VovBlog/
 ## 🌐 部署到 Vercel
 
 1. 将代码推送到 GitHub
-2. 访问 [Vercel](https://vercel.com)
+2. 访问 Vercel
 3. 导入您的 GitHub 仓库
 4. 配置环境变量（Cloudinary 凭据）
 5. 点击部署
 
-部署完成后，您的博客将在 `https://your-project.vercel.app` 上线。
-使用自己的域名，指向vercel项目，即可墙内访问。
+部署完成后，您的博客将在 `https://your-project.vercel.app` 上线。使用自己的域名，指向vercel项目，即可墙内访问。
 
 ## 🔧 环境变量说明
 
@@ -197,75 +186,8 @@ VovBlog/
 | `NEXT_PUBLIC_SITE_URL` | 网站 URL（用于 SEO） | 否 |
 | `ADMIN_PASSWORD` | 管理员密码 | 是 |
 
+---
 
 **Made with ❤️ using Next.js and Cloudinary**
-
-
-## 快速开始
-
-### 1. 配置 Cloudinary
-
-复制 `.env.local.example` 为 `.env.local`，填入您的 Cloudinary 凭据：
-
-\`\`\`bash
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-\`\`\`
-
-### 2. 启动开发服务器
-
-\`\`\`bash
-npm run dev
-\`\`\`
-
-访问 `http://localhost:3000` 查看博客。
-
-### 3. 创建文章
-
-访问 `/admin/new` 开始创建您的第一篇文章！
-
-## 图片示例
-
-您可以直接粘贴图片到编辑器中，图片会自动上传到 Cloudinary：
-
-*（在编辑器中粘贴或拖拽图片即可）*
-
-## 代码高亮
-
-支持代码块语法高亮：
-
-```javascript
-function greet(name) {
-  console.log('Hello, ' + name + '!')
-}
-
-greet('VovBlog')
-```
-
-## 列表
-
-### 无序列表
-
-- 功能一
-- 功能二
-- 功能三
-
-### 有序列表
-
-1. 第一步
-2. 第二步
-3. 第三步
-
-## 引用
-
-> 这是一个引用示例。VovBlog 让博客写作变得简单而优雅。
-
-## 接下来做什么？
-
-- 探索管理后台
-- 创建更多文章
-- 自定义样式
-- 部署到 Vercel
 
 祝您使用愉快！🎉

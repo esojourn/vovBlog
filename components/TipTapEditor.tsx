@@ -407,7 +407,7 @@ export default function TipTapEditor({
         linkify: false,              // 不自动转换 URL
         breaks: false,               // 换行不转为 <br>
         transformPastedText: true,   // ✨ 粘贴 Markdown 文本时自动转换
-        transformCopiedText: false,  // 复制保持富文本格式（不转 Markdown）
+        transformCopiedText: true,   // ✨ 改为 true：输出 Markdown 格式（便于存储和版本控制）
       }),
     ],
     content: initialContent,
@@ -453,9 +453,9 @@ export default function TipTapEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML()
-      const sanitizedHtml = sanitizeHtml(html)
-      onChange?.(sanitizedHtml)
+      // ✨ 获取 Markdown 格式内容而非 HTML
+      const markdown = editor.storage.markdown.getMarkdown()
+      onChange?.(markdown)
     },
   })
 
@@ -474,18 +474,17 @@ export default function TipTapEditor({
   // 进入源代码模式
   const enterSourceMode = useCallback(() => {
     if (!editor) return
-    const html = editor.getHTML()
-    const formattedHtml = formatHtml(html)  // ✨ 自动格式化
-    setSourceCode(formattedHtml)
+    // ✨ 改为获取 Markdown 而非 HTML
+    const markdown = editor.storage.markdown.getMarkdown()
+    setSourceCode(markdown)
     setIsSourceMode(true)
   }, [editor])
 
   // 退出源代码模式
   const exitSourceMode = useCallback(() => {
     if (!editor) return
-    const compressedHtml = compressHtml(sourceCode)  // ✨ 压缩为一行
-    const sanitizedHtml = sanitizeHtml(compressedHtml)  // ✨ 再次清洗并修复HTML结构
-    editor.commands.setContent(sanitizedHtml)
+    // ✨ 直接设置 Markdown 内容，TipTap 会自动处理
+    editor.commands.setContent(sourceCode)
     setIsSourceMode(false)
   }, [editor, sourceCode])
 
