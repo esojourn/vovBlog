@@ -13,6 +13,7 @@ interface PostFormData {
   description: string
   source: string
   originalUrl: string
+  date: string
 }
 
 export default function NewPostPage() {
@@ -26,6 +27,7 @@ export default function NewPostPage() {
     description: '',
     source: '"瓦器微声"公众号',
     originalUrl: '',
+    date: new Date().toISOString(),
   })
   const [tagInput, setTagInput] = useState('')
   const [saving, setSaving] = useState(false)
@@ -108,6 +110,7 @@ export default function NewPostPage() {
         content: processedContent,
         originalUrl: importUrl,
         source: '"瓦器微声"公众号',
+        date: data.publishDate || new Date().toISOString(),
       }))
 
       setImportUrl('')
@@ -153,7 +156,6 @@ export default function NewPostPage() {
         body: JSON.stringify({
           ...formData,
           published: publish,
-          date: new Date().toISOString(),
         }),
       })
 
@@ -264,6 +266,27 @@ export default function NewPostPage() {
             placeholder="简短描述文章内容..."
             rows={2}
           />
+        </div>
+
+        {/* 发布日期 */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            发布日期
+          </label>
+          <input
+            type="datetime-local"
+            value={formData.date ? new Date(formData.date).toISOString().slice(0, 16) : ''}
+            onChange={(e) => {
+              const dateValue = e.target.value
+                ? new Date(e.target.value).toISOString()
+                : new Date().toISOString()
+              setFormData((prev) => ({ ...prev, date: dateValue }))
+            }}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            💡 从公众号导入的文章会自动提取发布日期
+          </p>
         </div>
 
         {/* 分类 */}

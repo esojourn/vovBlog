@@ -5,10 +5,42 @@ interface FetchResult {
   title?: string
   content?: string
   images?: string[]
+  publishDate?: string
   error?: string
 }
 
 const BROWSER_TIMEOUT = 30000 // 30 秒超时
+
+/**
+ * 解析中文日期格式为 ISO 8601 字符串
+ * 支持格式: "2025年11月6日" -> "2025-11-06T00:00:00.000Z"
+ */
+function parseChinaDate(dateStr: string): string | null {
+  if (!dateStr) return null
+
+  try {
+    // 尝试匹配中文日期格式: "2025年11月6日"
+    const chineseMatch = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/)
+    if (chineseMatch) {
+      const [, year, month, day] = chineseMatch
+      const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00Z`)
+      if (!isNaN(date.getTime())) {
+        return date.toISOString()
+      }
+    }
+
+    // 尝试解析为标准格式 (ISO 8601 或其他标准格式)
+    const date = new Date(dateStr)
+    if (!isNaN(date.getTime())) {
+      return date.toISOString()
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
 
 /**
  * 验证 URL 是否为微信公众号链接
@@ -152,6 +184,75 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
       console.warn('[WeChat Fetch] 提取标题失败:', err)
     }
 
+    // 提取发布日期
+    let publishDate = ''
+    try {
+      // 尝试多个日期选择器
+      const publishTimeSelectors = [
+        '#publish_time',
+        '.publish_time',
+        '#js_publish_time',
+        'span#publish_time',
+      ]
+
+      for (const selector of publishTimeSelectors) {
+        try {
+          const dateElement = await page.$(selector)
+          if (dateElement) {
+            const dateText = await dateElement.textContent()
+            const trimmedDate = dateText?.trim() || ''
+            if (trimmedDate) {
+              const parsed = parseChinaDate(trimmedDate)
+              if (parsed) {
+                publishDate = parsed
+                console.log(`[WeChat Fetch] 通过选择器 ${selector} 提取到日期: ${trimmedDate}`)
+                break
+              }
+            }
+          }
+        } catch {
+          // 继续尝试下一个选择器
+        }
+      }
+
+      // 如果仍未找到日期，尝试从页面内容中提取
+      if (!publishDate) {
+        const pageContent = await page.content()
+
+        // 尝试从脚本变量中提取
+        const scriptMatch = pageContent.match(/var\s+ct_publish_time\s*=\s*(\d+)/)
+        if (scriptMatch) {
+          const timestamp = parseInt(scriptMatch[1], 10)
+          if (!isNaN(timestamp)) {
+            const date = new Date(timestamp * 1000)
+            publishDate = date.toISOString()
+            console.log(`[WeChat Fetch] 从脚本变量提取到时间戳: ${timestamp}`)
+          }
+        }
+
+        // 尝试从 meta 标签中提取
+        if (!publishDate) {
+          const metaDateMatch = pageContent.match(
+            /<meta\s+(?:name|property)=["'](?:publish|updated)_?time["']\s+content=["']([^"']+)["']/i
+          )
+          if (metaDateMatch && metaDateMatch[1]) {
+            const parsed = parseChinaDate(metaDateMatch[1])
+            if (parsed) {
+              publishDate = parsed
+              console.log(`[WeChat Fetch] 从 meta 标签提取到日期: ${metaDateMatch[1]}`)
+            }
+          }
+        }
+      }
+
+      if (!publishDate) {
+        console.warn('[WeChat Fetch] 未能提取到发布日期')
+      }
+    } catch (err) {
+      console.warn('[WeChat Fetch] 提取日期失败:', err)
+    }
+
+
     // 提取正文内容
     let content = ''
     try {
@@ -187,6 +288,7 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
       title,
       content,
       images,
+      publishDate: publishDate || undefined,
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
@@ -213,6 +315,7 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
  *   title?: string
  *   content?: string
  *   images?: string[]
+ *   publishDate?: string (ISO 8601 格式)
  *   error?: string
  * }
  */

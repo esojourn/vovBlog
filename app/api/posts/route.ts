@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       published: data.published !== false,
       description: data.description || '',
       source: data.source || '"瓦器微声"公众号',
+      originalUrl: data.originalUrl || '',
     })
 
     return NextResponse.json({ slug, success: true })
@@ -81,6 +82,7 @@ export async function PUT(request: Request) {
       published: data.published !== false,
       description: data.description || '',
       source: data.source || '"瓦器微声"公众号',
+      originalUrl: data.originalUrl || '',
     })
 
     return NextResponse.json({ slug, success: true })

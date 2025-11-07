@@ -148,6 +148,7 @@ export default function EditPostPage() {
         title: data.title || prev.title,
         content: processedContent || prev.content,
         originalUrl: importUrl,
+        date: data.publishDate || prev.date,
       }))
 
       alert('✅ 文章导入成功！请检查并编辑后再发布')
@@ -294,6 +295,27 @@ export default function EditPostPage() {
             placeholder="简短描述文章内容..."
             rows={2}
           />
+        </div>
+
+        {/* 发布日期 */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            发布日期
+          </label>
+          <input
+            type="datetime-local"
+            value={formData.date ? new Date(formData.date).toISOString().slice(0, 16) : ''}
+            onChange={(e) => {
+              const dateValue = e.target.value
+                ? new Date(e.target.value).toISOString()
+                : new Date().toISOString()
+              setFormData((prev) => ({ ...prev, date: dateValue }))
+            }}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            💡 从公众号导入的文章会自动提取发布日期
+          </p>
         </div>
 
         {/* 分类 */}
