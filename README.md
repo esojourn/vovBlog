@@ -1,33 +1,27 @@
 # VovBlog - Voice of Vessel
 
-为了转载保留一些公众号的文章，我开发了这个程序。
-这是一个基于 Next.js 16、TipTap 编辑器和 Cloudinary 构建的博客系统。
-
+为了转载保存一些微信公众号的文章，我开发了这个程序。
 
 - ✨✨✨ **一键导入微信公众号文章**！支持自动提取标题、正文、图片。直接输入 URL，内容自动填充到编辑器！
 - ✨✨ 使用免费的 Vercel / Cloudinary 额度，足够个人用户使用。
-- ✨ 使用 Cloudinary，兼顾墙内浏览速度。并且无需复杂的实名注册流程。
+- ✨ 使用 Cloudinary存储图片，兼顾墙内浏览速度，并且无需复杂的实名注册流程。
 
 实例预览：https://vov-blog.vercel.app
 
-
-
 ## 🚀 快速开始
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fesojourn%2FvovBlog)
+[![[assets/WaQi-vov-blog/3a5a2a79f8d5f90c1d389afef54eaf98_MD5.svg]]](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fesojourn%2FvovBlog)
+获取 Cloudinary API Key：https://cloudinary.com
+点击 "Deploy with Vercel"，设置环境变量；开始使用吧！ 😎👍
 
-获取 Cloudinary API Key；
-点击 "Deploy with Vercel"，设置 ADMIN_PASSWORD 环境变量作为管理员密码；
-开始使用吧！ :)
 
 ## ✨ 特性
 
 - 🤖 **微信公众号一键导入**：输入公众号文章 URL，自动提取标题、正文和图片，自动上传到 Cloudinary
-  - 使用 Playwright 无头浏览器，智能绕过反爬虫检测
-  - 自动清洗 HTML，确保 MDX 编译兼容
-  - 提取的图片自动上传到 Cloudinary CDN，墙内高速访问
-  - 支持编辑导入内容，灵活调整
-
+  - 使用 Playwright 无头浏览器，智能绕过反爬虫检测
+  - 自动清洗 HTML，确保 MDX 编译兼容
+  - 提取的图片自动上传到 Cloudinary CDN，墙内高速访问
+  - 支持编辑导入内容，灵活调整
 - 📝 **强大的富文本编辑器**：基于 TipTap，类似 Notion 的编辑体验
 - 🖼️ **智能图片处理**：支持粘贴、拖拽上传，自动优化和 CDN 加速
 - 🏷️ **标签和分类系统**：灵活的内容组织方式
@@ -35,24 +29,58 @@
 - 📱 **响应式设计**：在任何设备上都有良好的阅读体验
 - ⚡ **极速部署**：零配置部署到 Vercel
 
-## 🚀 快速开始
+## 🚀 本地部署 
+文章发布需要本地部署。在本地发布后，文章保存为.mdx文件。git push到github后，自动同步vercel。这样设计的原因是：
+1. 不需要数据库支持，避免依赖付费服务。
+2. 微信公众号阻挡爬虫抓取，但支持本地浏览。程序使用本地无头浏览器访问，不会触发反爬虫检测。
 
-### 1. 安装依赖
+进行以下步骤时，先确认上面“快速开始”中，线上vercel环境已经完成部署。
+
+### 1. 克隆项目
 
 ```bash
-# 安装bun
+# 克隆仓库到本地
+git clone https://github.com/esojourn/vovBlog.git
+cd vovBlog
+```
+
+### 2. 安装 Node.js 环境
+
+访问 [nodejs.org](https://nodejs.org) 下载并安装 LTS 版本（推荐 24.x）。
+
+### 3. 安装依赖
+
+```bash
+# 安装 Bun（超快的 JavaScript 运行时和包管理器）
 curl -fsSL https://bun.com/install | bash
+
+# 或者在 Windows 上使用
+powershell -c "irm bun.sh/install.ps1|iex"
+
+# 刷新环境变量（如果需要）
+source ~/.bashrc  # Linux/macOS
+# 或重启终端
+
+# 验证 Bun 安装
+bun --version
+
+# 安装项目依赖
 bun install
 ```
 
-在WSL中，使用Playwright需要安装很多依赖。我使用的是Ubuntu 24
+**如果在 WSL 中使用 Playwright（用于微信文章导入）：**
 
-```
-bunx playwright install-deps chromium 
-bunx playwright install chromium
+```bash
+# WSL/Ubuntu 需要安装额外的依赖库
+bunx playwright install-deps chromium
 ```
 
-### 2. 配置环境变量
+**注意：** 本项目使用 Bun 作为包管理器，比 npm 快 6-10 倍。如果未安装 Bun，可以使用 npm 或 yarn 替代：
+```bash
+npm install  # 或 yarn install
+```
+
+### 4. 配置环境变量
 
 复制 `.env.local.example` 为 `.env.local`：
 
@@ -70,7 +98,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 ADMIN_PASSWORD=password
 ```
 
-### 3. 启动开发服务器
+### 5. 启动开发服务器
 
 ```bash
 bun run dev
@@ -78,7 +106,7 @@ bun run dev
 
 访问 `http://localhost:3000` 查看您的博客。
 
-### 4. 部署到生产环境
+### 6. 部署到生产环境
 
 一键部署到 Vercel：
 
@@ -100,7 +128,7 @@ bun run deploy
 
 详细部署指南请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
-### 5. 创建文章
+### 7. 创建文章
 
 #### 方法一：一键导入微信公众号文章 ⭐ 推荐
 
@@ -119,18 +147,20 @@ bun run deploy
 - ✅ 自动提取标题
 - ✅ 自动提取正文（包含所有格式）
 - ✅ 自动上传文章中的图片到 Cloudinary
-- ✅ 自动设置文章来源为"瓦器微声"公众号
+   - 自动格式转换（WebP）
+   - 质量优化
+   - 最大宽度限制（1200px）
+   - CDN 加速
 - ✅ 自动清洗 HTML，确保兼容性
 
 #### 方法二：手动创建文章
 
 1. 访问 `/admin/new` 创建新文章
-2. 填写标题、描述、分类
-3. 添加标签
-4. 在编辑器中写作
+2. 填写标题等
+3. 在编辑器中写作或粘贴
 5. 直接粘贴图片到编辑器，自动上传
 6. 支持拖拽上传图片
-7. 从其他网页复制内容时，自动保留标题格式
+7. 从其他网页复制内容时，自动保留格式
 
 ## 📦 技术栈
 
@@ -169,44 +199,6 @@ VovBlog/
 └── content/posts/         # MDX 文章文件
 ```
 
-## 📝 使用指南
-
-### 创建文章
-
-1. 访问 `/admin/new`
-2. 填写标题、描述、分类
-3. 添加标签
-4. 在编辑器中写作
-5. 粘贴或拖拽图片（自动上传到 Cloudinary）
-6. 点击"保存草稿"或"发布文章"
-
-### 编辑文章
-
-1. 访问 `/admin`
-2. 点击文章右侧的编辑按钮
-3. 修改内容后保存
-
-### 图片上传
-
-编辑器支持三种上传方式：
-
-1. **粘贴**：Ctrl+V 或 Cmd+V
-2. **拖拽**：直接拖拽图片到编辑器
-3. **点击按钮**：点击工具栏的图片按钮选择文件
-
-所有图片自动上传到 Cloudinary，并应用以下优化：
-
-- 自动格式转换（WebP）
-- 质量优化
-- 最大宽度限制（1200px）
-- CDN 加速
-
-### 搜索和筛选
-
-- 首页顶部的搜索框支持全文搜索
-- 点击分类或标签可筛选文章
-- 支持多条件组合筛选
-
 ### 微信公众号文章导入详解
 
 #### 工作流程
@@ -223,7 +215,6 @@ VovBlog/
 - 🖼️ **图片自动处理**：自动上传所有图片，无需手动操作
 - 🧹 **智能清洗**：自动移除微信追踪代码和样式，保留有效内容
 - ✏️ **可编辑**：导入后仍可继续编辑和调整内容
-- 📱 **全设备支持**：在编辑和阅读页面都可导入文章
 - ⚡ **快速导入**：通常只需 3-5 秒即可导入整篇文章
 
 #### 常见问题
