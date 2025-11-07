@@ -31,6 +31,22 @@ function fixSpaces(text: string): string {
 }
 
 /**
+ * 🔧 清洗列表标记重复问题
+ */
+function cleanListMarkers(text: string): string {
+  // 处理有序列表重复：1. 1. 开头 -> 1. 开头
+  text = text.replace(/^(\s*)(\d+)\.\s+\d+\.\s+/gm, '$1$2. ')
+
+  // 处理无序列表重复：- • 开头 -> - 开头
+  text = text.replace(/^(\s*)-\s+[•◦◾▪▫]/gm, '$1-')
+
+  // 处理无序列表重复：- 1. 开头 -> - 开头（如果数字紧跟在bullet后）
+  text = text.replace(/^(\s*)-\s+\d+\.\s+/gm, '$1- ')
+
+  return text
+}
+
+/**
  * 检查内容是否是 Markdown
  * 简单启发式：Markdown 通常包含 #、**、- 等标记，而 HTML 包含 < >
  */
@@ -87,7 +103,9 @@ function htmlToMarkdown(html: string): string {
 
   try {
     let markdown = turndownService.turndown(html)
-    // 🔧 新增：应用空格修正规则
+    // 🔧 新增：应用列表标记清洗规则
+    markdown = cleanListMarkers(markdown)
+    // 🔧 应用空格修正规则
     markdown = fixSpaces(markdown)
     return markdown
   } catch (err) {
@@ -112,8 +130,9 @@ async function migrateFile(filePath: string): Promise<{ success: boolean; messag
     let processedContent = content
 
     if (isAlreadyMarkdown) {
-      // 🔧 新增：即使已经是 Markdown，也应用空格修正规则
-      processedContent = fixSpaces(content)
+      // 🔧 新增：即使已经是 Markdown，也应用列表标记清洗和空格修正规则
+      processedContent = cleanListMarkers(content)
+      processedContent = fixSpaces(processedContent)
 
       // 检查是否有变化
       if (processedContent === content) {
@@ -123,12 +142,12 @@ async function migrateFile(filePath: string): Promise<{ success: boolean; messag
         }
       } else {
         // 有改动，需要保存
-        console.log(`🔧 修正 ${fileName} 中的空格...`)
+        console.log(`🔧 修正 ${fileName} 中的列表标记和空格...`)
         const migrated = matter.stringify(processedContent, data)
         await fs.writeFile(filePath, migrated, 'utf8')
         return {
           success: true,
-          message: `✨ ${fileName} - 已修正空格`,
+          message: `✨ ${fileName} - 已修正列表标记和空格`,
         }
       }
     }

@@ -43,6 +43,20 @@ function fixSpaces(text: string): string {
     .replace(/宣\s+教/g, '宣教')
 }
 
+// 🔧 清洗列表标记重复问题
+function cleanListMarkers(text: string): string {
+  // 处理有序列表重复：1. 1. 开头 -> 1. 开头
+  text = text.replace(/^(\s*)(\d+)\.\s+\d+\.\s+/gm, '$1$2. ')
+
+  // 处理无序列表重复：- • 开头 -> - 开头
+  text = text.replace(/^(\s*)-\s+[•◦◾▪▫]/gm, '$1-')
+
+  // 处理无序列表重复：- 1. 开头 -> - 开头（如果数字紧跟在bullet后）
+  text = text.replace(/^(\s*)-\s+\d+\.\s+/gm, '$1- ')
+
+  return text
+}
+
 function htmlToMarkdown(html: string): string {
   const turndownService = new TurndownService({
     headingStyle: 'atx',
@@ -52,6 +66,8 @@ function htmlToMarkdown(html: string): string {
   })
 
   let markdown = turndownService.turndown(html)
+  // 应用列表标记清洗规则
+  markdown = cleanListMarkers(markdown)
   // 应用空格修正规则
   markdown = fixSpaces(markdown)
   return markdown
