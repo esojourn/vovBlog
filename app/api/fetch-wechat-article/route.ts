@@ -84,6 +84,20 @@ function cleanWeChatHtml(html: string): string {
   cleaned = cleaned.replace(/<mp-[^>]*>[\s\S]*?<\/mp-[^>]*>/gi, '')
   cleaned = cleaned.replace(/<mp-[^>]*\s*\/>/gi, '')
 
+  // 第一步：将带有 font-weight: bold 的 span/div 转换为 <strong>
+  // 支持 font-weight: bold, font-weight: 700+ (粗体值), 忽略 font-size 等其他样式
+  // 匹配模式: <span/div ... style="...font-weight: bold/700+...">内容</span/div>
+  cleaned = cleaned.replace(
+    /<(span|div)([^>]*?)style=["']([^"']*?)font-weight:\s*(bold|[6-9]00)([^"']*?)["']([^>]*?)>(.*?)<\/\1>/gi,
+    '<strong>$7</strong>'
+  )
+
+  // 也处理 style 属性在标签开头的情况
+  cleaned = cleaned.replace(
+    /<(span|div)\s+style=["']([^"']*?)font-weight:\s*(bold|[6-9]00)([^"']*?)["']([^>]*?)>(.*?)<\/\1>/gi,
+    '<strong>$6</strong>'
+  )
+
   // 移除 style 属性和 data-* 属性，保留 src、alt 等重要属性
   cleaned = cleaned.replace(/\s+(style|class|data-[a-z-]*|id|title)=["'][^"']*["']/gi, '')
 
