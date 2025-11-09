@@ -54,6 +54,14 @@ function cleanListMarkers(text: string): string {
   // 处理无序列表重复：- 1. 开头 -> - 开头（如果数字紧跟在bullet后）
   text = text.replace(/^(\s*)-\s+\d+\.\s+/gm, '$1- ')
 
+  // 移除多余的反斜杠转义（保留在需要的地方）
+  // 但不是在代码块中的反斜杠
+  text = text.replace(/^(\s*)-\s+\\\\/gm, '$1-')
+
+  // 修复列表项中的多余空格和转义
+  // 例如：- • \*\*描述：\*\*\\ 蚂蚁 → - **描述：** 蚂蚁
+  text = text.replace(/^(\s*)-\s+[•◦◾▪▫]\s+/gm, '$1- ')
+
   return text
 }
 
@@ -63,9 +71,33 @@ function htmlToMarkdown(html: string): string {
     hr: '---',
     bulletListMarker: '-',
     codeBlockStyle: 'fenced',
+    preformattedCode: true,  // 保留预格式化代码
+  })
+
+  // 添加自定义规则防止过度转义
+  // 防止图片 alt 中的方括号被转义
+  turndownService.addRule('image-safe', {
+    filter: 'img',
+    replacement: (content, node) => {
+      const src = node.getAttribute('src') || ''
+      const alt = node.getAttribute('alt') || ''
+      // 不转义 alt 中的特殊字符
+      return `![${alt}](${src})`
+    },
   })
 
   let markdown = turndownService.turndown(html)
+
+  // 修复常见的过度转义
+  // 图片链接中的方括号：!\[text\] → ![text]
+  markdown = markdown.replace(/!\\\[([^\]]*)\\\]/g, '![$1]')
+
+  // 粗体中的星号：\*\*text\*\* → **text**
+  markdown = markdown.replace(/\\\*\\\*([^\*]*)\\\*\\\*/g, '**$1**')
+
+  // 斜体中的星号：\*text\* → *text*（但不影响列表中的星号）
+  markdown = markdown.replace(/(?<![-])\s\\\*([^\*]+)\\\*/g, ' *$1*')
+
   // 应用列表标记清洗规则
   markdown = cleanListMarkers(markdown)
   // 应用空格修正规则
@@ -166,11 +198,10 @@ export default function TipTapEditor({
       .replace(/\s+<\/p>/gi, '</p>')
       .replace(/<p>\s+/gi, '<p>')
 
-    // 第五步：过滤多余空行 - 使用更激进的方式
-    // 将连续的 <br /> 和 <p></p> 合并为单个分隔符
+    // 第五步：过滤真正多余的空行 - 但保留正常的段落分隔
+    // 将连续的 <br /> 合并为一个（但保留 </p><p> 的段落分隔）
     fixedHtml = fixedHtml
       .replace(/(<br\s*\/?>\s*){2,}/gi, '<br />') // 连续 br 合并为一个
-      .replace(/(<\/p>\s*<p>)+/gi, '</p><p>') // 多个 p 换行合并
 
     // 移除开头和结尾的空白行
     fixedHtml = fixedHtml
@@ -404,9 +435,11 @@ export default function TipTapEditor({
         const images = Array.from(doc.querySelectorAll('img'))
 
         if (images.length === 0) {
-          // 没有图片，直接插入清洗后的 HTML
+          // 没有图片，直接插入清洗后的内容
+          // 🔧 改进：先清洗 HTML，再转换为 Markdown（应用清洗规则）
           const cleanHtml = sanitizeHtml(html)
-          editorInstance.chain().focus().insertContent(cleanHtml).run()
+          const markdown = htmlToMarkdown(cleanHtml)
+          editorInstance.chain().focus().insertContent(markdown).run()
           return
         }
 
@@ -463,9 +496,11 @@ export default function TipTapEditor({
           element.remove()
         })
 
-        // 清洗 HTML 并插入编辑器
+        // 清洗 HTML 并转换为 Markdown（应用清洗规则）
+        // 🔧 改进：使用 htmlToMarkdown 而不仅仅是 sanitizeHtml
         const cleanHtml = sanitizeHtml(doc.body.innerHTML)
-        editorInstance.chain().focus().insertContent(cleanHtml).run()
+        const markdown = htmlToMarkdown(cleanHtml)
+        editorInstance.chain().focus().insertContent(markdown).run()
 
         const successCount = uploadedUrls.filter((url) => url).length
         console.log(`[Editor] 成功处理 ${successCount}/${batchImageSources.length} 张图片`)
@@ -535,9 +570,10 @@ export default function TipTapEditor({
           }
         }
 
-        // 处理 HTML 内容中的图片
+        // 🔧 改进：处理所有 HTML 内容，不仅仅是包含图片的
+        // 这样可以对微信公众号文章等内容进行完整清洗
         const html = event.clipboardData?.getData('text/html')
-        if (html && html.includes('<img')) {
+        if (html) {
           event.preventDefault()
           processHtmlWithImages(html, editor)
           return true

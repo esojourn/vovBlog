@@ -6,6 +6,8 @@ import { LogoImage } from '@/components/LogoImage'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { AdminLink } from '@/components/AdminLink'
 import { CreateButton } from '@/components/CreateButton'
+import { GoogleAnalytics } from '@/components/GoogleAnalytics'
+import { RouteChangeListener } from '@/components/RouteChangeListener'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -48,6 +50,7 @@ export default function RootLayout({
     <html lang="zh-CN" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
+          <RouteChangeListener />
           <div className="min-h-screen bg-background flex flex-col">
             <header className="border-b">
               <div className="container mx-auto px-4 py-6">
@@ -87,6 +90,7 @@ export default function RootLayout({
             </footer>
           </div>
         </ThemeProvider>
+        <GoogleAnalytics />
       </body>
     </html>
   )

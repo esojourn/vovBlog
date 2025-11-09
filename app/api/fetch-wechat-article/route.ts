@@ -92,11 +92,36 @@ function htmlToMarkdown(html: string): string {
     hr: '---',
     bulletListMarker: '-',
     codeBlockStyle: 'fenced',
+    preformattedCode: true,  // 保留预格式化代码
+  })
+
+  // 添加自定义规则防止过度转义
+  // 防止图片 alt 中的方括号被转义
+  turndownService.addRule('image-safe', {
+    filter: 'img',
+    replacement: (content, node) => {
+      const src = node.getAttribute('src') || ''
+      const alt = node.getAttribute('alt') || ''
+      // 不转义 alt 中的特殊字符
+      return `![${alt}](${src})`
+    },
   })
 
   let markdown = turndownService.turndown(html)
+
+  // 修复常见的过度转义
+  // 图片链接中的方括号：!\[text\] → ![text]
+  markdown = markdown.replace(/!\\\[([^\]]*)\\\]/g, '![$1]')
+
+  // 粗体中的星号：\*\*text\*\* → **text**
+  markdown = markdown.replace(/\\\*\\\*([^\*]*)\\\*\\\*/g, '**$1**')
+
+  // 斜体中的星号：\*text\* → *text*（但不影响列表中的星号）
+  markdown = markdown.replace(/(?<![-])\s\\\*([^\*]+)\\\*/g, ' *$1*')
+
   // 应用空格修正规则
   markdown = fixSpaces(markdown)
+
   return markdown
 }
 
@@ -158,9 +183,10 @@ function cleanWeChatHtml(html: string): string {
   // 修复 <hr> 标签
   cleaned = cleaned.replace(/<hr[^>]*>/gi, '<hr />')
 
-  // 清理标签间的空白
+  // 清理标签间的多余空白，但保留段落分隔
+  // 保留 </p><p> 等块级元素间的换行，只移除标签间的多余空格
   cleaned = cleaned
-    .replace(/>\s+</g, '><')
+    .replace(/>\s{2,}</g, '> <')  // 多个空白 → 单个空白
     .trim()
 
   // 🔧 最后一步：验证和修复常见的 HTML 错误

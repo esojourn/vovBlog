@@ -18,7 +18,9 @@
       "Bash(git checkout:*)",
       "Bash(bun run build:*)",
       "Read(//root/.cache/ms-playwright/**)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "mcp__open-websearch__search",
+      "mcp__open-websearch__fetchGithubReadme"
     ],
     "deny": [],
     "ask": []

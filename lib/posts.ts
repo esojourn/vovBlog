@@ -46,6 +46,14 @@ function cleanListMarkers(text: string): string {
   // 处理无序列表重复：- 1. 开头 -> - 开头（如果数字紧跟在bullet后）
   text = text.replace(/^(\s*)-\s+\d+\.\s+/gm, '$1- ')
 
+  // 移除多余的反斜杠转义（保留在需要的地方）
+  // 但不是在代码块中的反斜杠
+  text = text.replace(/^(\s*)-\s+\\\\/gm, '$1-')
+
+  // 修复列表项中的多余空格和转义
+  // 例如：- • \*\*描述：\*\*\\ 蚂蚁 → - **描述：** 蚂蚁
+  text = text.replace(/^(\s*)-\s+[•◦◾▪▫]\s+/gm, '$1- ')
+
   return text
 }
 
@@ -55,9 +63,33 @@ function convertToMarkdown(html: string): string {
     hr: '---',
     bulletListMarker: '-',
     codeBlockStyle: 'fenced',
+    preformattedCode: true,  // 保留预格式化代码
+  })
+
+  // 添加自定义规则防止过度转义
+  // 防止图片 alt 中的方括号被转义
+  turndownService.addRule('image-safe', {
+    filter: 'img',
+    replacement: (content, node) => {
+      const src = node.getAttribute('src') || ''
+      const alt = node.getAttribute('alt') || ''
+      // 不转义 alt 中的特殊字符
+      return `![${alt}](${src})`
+    },
   })
 
   let markdown = turndownService.turndown(html)
+
+  // 修复常见的过度转义
+  // 图片链接中的方括号：!\[text\] → ![text]
+  markdown = markdown.replace(/!\\\[([^\]]*)\\\]/g, '![$1]')
+
+  // 粗体中的星号：\*\*text\*\* → **text**
+  markdown = markdown.replace(/\\\*\\\*([^\*]*)\\\*\\\*/g, '**$1**')
+
+  // 斜体中的星号：\*text\* → *text*（但不影响列表中的星号）
+  markdown = markdown.replace(/(?<![-])\s\\\*([^\*]+)\\\*/g, ' *$1*')
+
   // 应用列表标记清洗规则
   markdown = cleanListMarkers(markdown)
   // 应用空格修正规则
