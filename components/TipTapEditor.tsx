@@ -26,6 +26,7 @@ import {
   FileCode,
   Loader2,
   Highlighter,
+  Link2,
 } from 'lucide-react'
 
 hljs.registerLanguage('html', html)
@@ -702,6 +703,24 @@ export default function TipTapEditor({
     input.click()
   }, [handleImageUpload])
 
+  const handleImageFromUrl = useCallback(() => {
+    const url = prompt('请输入图片 URL:')
+    if (!url || !url.trim()) {
+      return
+    }
+
+    // 验证 URL 格式
+    try {
+      new URL(url.trim())
+    } catch {
+      alert('请输入有效的 URL')
+      return
+    }
+
+    // 直接插入图片
+    editor?.chain().focus().setImage({ src: url.trim() }).run()
+  }, [editor])
+
   if (!editor) {
     return null
   }
@@ -814,6 +833,15 @@ export default function TipTapEditor({
           ) : (
             <ImageIcon className="w-4 h-4" />
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleImageFromUrl}
+          className="p-2 rounded hover:bg-background"
+          title="通过 URL 插入图片"
+        >
+          <Link2 className="w-4 h-4" />
         </button>
 
         <div className="w-px bg-border mx-1" />
