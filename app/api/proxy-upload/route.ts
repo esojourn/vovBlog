@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { uploadImage } from '@/lib/cloudinary'
+import { createHash } from 'crypto'
 
 interface ProxyUploadRequest {
   imageUrls: string[]
@@ -8,6 +9,7 @@ interface ProxyUploadRequest {
 interface UploadResult {
   url?: string
   error?: string
+  reused?: boolean  // 标记是否为复用的图片
 }
 
 // 下载超时配置（毫秒）
@@ -17,13 +19,23 @@ const DOWNLOAD_TIMEOUT = 15000
 const MAX_IMAGES = 5
 
 /**
- * 从 URL 下载图片 blob
+ * 计算 Blob 的 SHA256 哈希值
+ */
+async function calculateBlobHash(blob: Blob): Promise<string> {
+  const buffer = Buffer.from(await blob.arrayBuffer())
+  const hash = createHash('sha256')
+  hash.update(buffer)
+  return hash.digest('hex')
+}
+
+/**
+ * 从 URL 下载图片 blob 并返回哈希值
  */
 async function downloadImage(
   url: string,
   index: number,
   total: number
-): Promise<Blob | null> {
+): Promise<{ blob: Blob; hash: string } | null> {
   try {
     console.log(`[Proxy Upload] 开始下载图片 (${index + 1}/${total}):`, url)
 
@@ -53,49 +65,14 @@ async function downloadImage(
       `[Proxy Upload] 下载成功 (${index + 1}/${total}): ${blob.size} bytes, type: ${blob.type}`
     )
 
-    return blob
+    // 🔧 新增：计算图片哈希值用于去重检测
+    const hash = await calculateBlobHash(blob)
+    console.log(`[Proxy Upload] 图片哈希值 (${index + 1}/${total}): ${hash}`)
+
+    return { blob, hash }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
     console.warn(`[Proxy Upload] 下载图片失败 (${index + 1}/${total}):`, errorMsg)
-    return null
-  }
-}
-
-/**
- * 上传单个图片到 Cloudinary
- */
-async function uploadSingleImage(
-  blob: Blob,
-  index: number,
-  total: number
-): Promise<string | null> {
-  try {
-    // 验证文件类型
-    if (!blob.type.startsWith('image/')) {
-      console.warn(
-        `[Proxy Upload] 无效的图片类型 (${index + 1}/${total}): ${blob.type}`
-      )
-      return null
-    }
-
-    // 验证文件大小
-    if (blob.size > 10 * 1024 * 1024) {
-      console.warn(`[Proxy Upload] 图片过大 (${index + 1}/${total}): ${blob.size} bytes`)
-      return null
-    }
-
-    // 转换为 File 对象
-    const file = new File([blob], `image-${index}.jpg`, { type: blob.type })
-
-    console.log(`[Proxy Upload] 开始上传到 Cloudinary (${index + 1}/${total})`)
-
-    const url = await uploadImage(file)
-
-    console.log(`[Proxy Upload] 上传成功 (${index + 1}/${total}):`, url)
-    return url
-  } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err)
-    console.error(`[Proxy Upload] 上传失败 (${index + 1}/${total}):`, errorMsg)
     return null
   }
 }
@@ -111,7 +88,7 @@ async function uploadSingleImage(
  *
  * 响应:
  * {
- *   results: Array<{ url?: string, error?: string }>
+ *   results: Array<{ url?: string, error?: string, reused?: boolean }>
  * }
  */
 export async function POST(request: Request) {
@@ -141,32 +118,74 @@ export async function POST(request: Request) {
       imageUrls
     )
 
+    // 🔧 新增：哈希映射表，用于去重检测
+    const hashMap = new Map<string, string>()  // hash -> cloudinaryUrl
+
     // 并发下载所有图片
     const downloadPromises = imageUrls.map((url, index) =>
       downloadImage(url, index, imageUrls.length)
     )
-    const blobs = await Promise.all(downloadPromises)
+    const downloadResults = await Promise.all(downloadPromises)
 
-    // 并发上传所有图片
-    const uploadPromises = blobs.map((blob, index) => {
-      if (!blob) {
-        return Promise.resolve(null)
+    // 处理上传和去重逻辑
+    const uploadPromises = downloadResults.map(async (result, index) => {
+      if (!result) {
+        return { error: '下载失败' }
       }
-      return uploadSingleImage(blob, index, imageUrls.length)
-    })
-    const uploadedUrls = await Promise.all(uploadPromises)
 
-    // 生成结果数组
-    const results: UploadResult[] = uploadedUrls.map((url) => {
-      if (url) {
+      const { blob, hash } = result
+
+      // 🔧 检查哈希是否已存在（重复图片）
+      if (hashMap.has(hash)) {
+        const existingUrl = hashMap.get(hash)!
+        console.log(`[Proxy Upload] 检测到重复图片 (${index + 1}/${imageUrls.length}): ${hash}`)
+        console.log(`[Proxy Upload] 复用已上传图片 (${index + 1}/${imageUrls.length}):`, existingUrl)
+        return { url: existingUrl, reused: true }
+      }
+
+      // 新图片，执行上传
+      try {
+        console.log(`[Proxy Upload] 开始上传到 Cloudinary (${index + 1}/${imageUrls.length})`)
+
+        // 验证文件类型
+        if (!blob.type.startsWith('image/')) {
+          console.warn(
+            `[Proxy Upload] 无效的图片类型 (${index + 1}/${imageUrls.length}): ${blob.type}`
+          )
+          return { error: '无效的图片类型' }
+        }
+
+        // 验证文件大小
+        if (blob.size > 10 * 1024 * 1024) {
+          console.warn(`[Proxy Upload] 图片过大 (${index + 1}/${imageUrls.length}): ${blob.size} bytes`)
+          return { error: '图片过大' }
+        }
+
+        // 转换为 File 对象
+        const file = new File([blob], `image-${index}.jpg`, { type: blob.type })
+
+        // 上传到 Cloudinary
+        const url = await uploadImage(file)
+
+        // 🔧 记录上传成功的图片哈希
+        hashMap.set(hash, url)
+
+        console.log(`[Proxy Upload] 上传成功 (${index + 1}/${imageUrls.length}):`, url)
         return { url }
-      } else {
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        console.error(`[Proxy Upload] 上传失败 (${index + 1}/${imageUrls.length}):`, errorMsg)
         return { error: '上传失败' }
       }
     })
 
+    const results = await Promise.all(uploadPromises)
+
+    const successCount = results.filter((r) => r.url).length
+    const reuseCount = results.filter((r) => r.reused).length
+
     console.log(
-      `[Proxy Upload] 处理完成: 成功 ${results.filter((r) => r.url).length}/${imageUrls.length} 张`
+      `[Proxy Upload] 处理完成: 成功 ${successCount}/${imageUrls.length} 张, 复用 ${reuseCount} 张`
     )
 
     return NextResponse.json({ results })
