@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Inter } from 'next/font/google'
 import { Github } from 'lucide-react'
 import { ThemeProvider } from '@/components/ThemeProvider'
@@ -75,10 +76,19 @@ export default function RootLayout({
                     >
                       <Github size={20} />
                     </a>
-                    <p className="text-center sm:text-left text-muted-foreground text-sm">
-                      瓦器 WaQi.uk . 本站程序代码及原创内容采用 CC0 协议，放弃所有版权，可自由使用。
-                      转载文章版权归原作者所有。
-                    </p>
+                    <div className="text-center sm:text-left text-muted-foreground text-sm">
+                      <p>
+                        瓦器 WaQi.uk . 本站程序代码及原创内容采用 CC0 协议，放弃所有版权，可自由使用。
+                        转载文章版权归原作者所有。
+                        <span className="mx-2">·</span>
+                        <Link
+                          href="/blog/guan-yu-wo-men"
+                          className="hover:text-foreground transition-colors underline"
+                        >
+                          关于我们
+                        </Link>
+                      </p>
+                    </div>
                   </div>
                   <div className="flex-shrink-0 flex items-center gap-4">
                     <CreateButton />
