@@ -4,6 +4,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import Highlight from '@tiptap/extension-highlight'
 import { Markdown } from 'tiptap-markdown'
@@ -26,6 +27,7 @@ import {
   FileCode,
   Loader2,
   Highlighter,
+  Link as LinkIcon,
   Link2,
 } from 'lucide-react'
 
@@ -553,6 +555,11 @@ export default function TipTapEditor({
         inline: true,
         allowBase64: false,  // 禁用 Base64，强制上传到 Cloudinary
       }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: 'https',
+      }),
       Placeholder.configure({
         placeholder,
       }),
@@ -761,6 +768,51 @@ export default function TipTapEditor({
     editor?.chain().focus().setImage({ src: url.trim() }).run()
   }, [editor])
 
+  const handleAddLink = useCallback(() => {
+    if (!editor) return
+
+    const { $from, $to } = editor.state.selection
+    const isSelection = $from.pos !== $to.pos
+    const currentUrl = editor.isActive('link') ? editor.getAttributes('link').href : ''
+
+    const url = prompt(
+      isSelection || currentUrl
+        ? '请输入链接 URL:'
+        : '请先选中文本，然后再添加链接',
+      currentUrl
+    )
+
+    if (url === null) {
+      return
+    }
+
+    // 如果用户清空了 URL，则移除链接
+    if (!url.trim()) {
+      editor.chain().focus().unsetLink().run()
+      return
+    }
+
+    // 验证 URL 格式
+    try {
+      new URL(url.trim())
+    } catch {
+      alert('请输入有效的 URL')
+      return
+    }
+
+    // 如果没有选中文本，不操作
+    if (!isSelection && !currentUrl) {
+      return
+    }
+
+    // 添加或编辑链接
+    editor
+      .chain()
+      .focus()
+      .toggleLink({ href: url.trim(), target: '_blank' })
+      .run()
+  }, [editor])
+
   if (!editor) {
     return null
   }
@@ -857,6 +909,17 @@ export default function TipTapEditor({
           title="高亮"
         >
           <Highlighter className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={handleAddLink}
+          className={`p-2 rounded hover:bg-background ${
+            editor.isActive('link') ? 'bg-background' : ''
+          }`}
+          title="添加或编辑链接"
+        >
+          <LinkIcon className="w-4 h-4" />
         </button>
 
         <div className="w-px bg-border mx-1" />
