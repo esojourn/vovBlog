@@ -2,7 +2,7 @@ import { getAllPosts, getPostBySlug } from '@/lib/posts'
 import { notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
-import { Calendar, Clock, Tag, FolderOpen } from 'lucide-react'
+import { Calendar, Clock, Tag, FolderOpen, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { EditButton } from '@/components/EditButton'
 
@@ -55,6 +55,12 @@ export default async function BlogPostPage({
             <Calendar className="w-4 h-4" />
             <span>{formatDate(post.date)}</span>
           </div>
+          {post.source && (
+            <div className="flex items-center gap-1">
+              <Share2 className="w-4 h-4" />
+              <span>{post.source}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             <span>{readingTime} 分钟阅读</span>
@@ -92,7 +98,7 @@ export default async function BlogPostPage({
       <div className="prose prose-lg max-w-none">
         <MDXRemote source={post.content} />
       </div>
-
+      
       {/* 文章来源 */}
       <div className="mt-12 pt-8 border-t text-muted-foreground">
         <p>文章来源：{post.source}</p>
