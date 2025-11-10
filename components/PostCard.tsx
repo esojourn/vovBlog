@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
 import { Post } from '@/lib/posts'
-import { Calendar, Clock, Tag } from 'lucide-react'
+import { Calendar, Clock, Tag, Share2 } from 'lucide-react'
 
 interface PostCardProps {
   post: Post
@@ -28,6 +28,12 @@ export default function PostCard({ post }: PostCardProps) {
             <Calendar className="w-4 h-4" />
             <span>{formatDate(post.date)}</span>
           </div>
+          {post.source && (
+            <div className="flex items-center gap-1">
+              <Share2 className="w-4 h-4" />
+              <span>{post.source}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             <span>{readingTime} 分钟阅读</span>

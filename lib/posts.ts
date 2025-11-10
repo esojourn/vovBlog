@@ -201,3 +201,16 @@ export async function getAllCategories(): Promise<string[]> {
 
   return Array.from(categoriesSet).sort()
 }
+
+export async function getAllSources(): Promise<string[]> {
+  const posts = await getAllPosts()
+  const sourcesSet = new Set<string>()
+
+  posts.forEach((post) => {
+    if (post.source) {
+      sourcesSet.add(post.source)
+    }
+  })
+
+  return Array.from(sourcesSet).sort()
+}

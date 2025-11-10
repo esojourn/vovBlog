@@ -10,16 +10,19 @@ interface HomeClientProps {
   initialPosts: Post[]
   allTags: string[]
   allCategories: string[]
+  allSources: string[]
 }
 
 export default function HomeClient({
   initialPosts,
   allTags,
   allCategories,
+  allSources,
 }: HomeClientProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedSource, setSelectedSource] = useState<string | null>(null)
 
   const filteredPosts = initialPosts.filter((post) => {
     const matchesSearch = searchQuery
@@ -29,8 +32,9 @@ export default function HomeClient({
     const matchesCategory = selectedCategory
       ? post.category === selectedCategory
       : true
+    const matchesSource = selectedSource ? post.source === selectedSource : true
 
-    return matchesSearch && matchesTag && matchesCategory && post.published
+    return matchesSearch && matchesTag && matchesCategory && matchesSource && post.published
   })
 
   return (
@@ -39,6 +43,38 @@ export default function HomeClient({
         {/* <h1 className="text-4xl font-bold mb-4">文章列表</h1> */}
         <SearchBar onSearch={setSearchQuery} />
       </div>
+
+      {/* 来源筛选 */}
+      {allSources.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-medium mb-2">文章来源</h2>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedSource(null)}
+              className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                !selectedSource
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+              }`}
+            >
+              全部
+            </button>
+            {allSources.map((source) => (
+              <button
+                key={source}
+                onClick={() => setSelectedSource(source)}
+                className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                  selectedSource === source
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-primary/10 text-primary hover:bg-primary/20'
+                }`}
+              >
+                {source}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 文章列表 */}
       {filteredPosts.length === 0 ? (
