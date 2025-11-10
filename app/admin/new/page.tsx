@@ -9,6 +9,7 @@ import { validateImageUrls } from '@/lib/utils'
 const ACCOUNT_SOURCE_MAP: Record<string, string> = {
   '瓦器微声': '"瓦器微声"公众号',
   '盐读书': '"盐读书"公众号',
+  '五饼二鱼能量站': '"五饼二鱼能量站"公众号',
   // 未来可以继续添加更多公众号
 }
 
@@ -351,6 +352,7 @@ export default function NewPostPage() {
           >
             <option value='"瓦器微声"公众号'>"瓦器微声"公众号</option>
             <option value='"盐读书"公众号'>"盐读书"公众号</option>
+            <option value='"五饼二鱼能量站"公众号'>"五饼二鱼能量站"公众号</option>
             <option value="原创">原创</option>
           </select>
         </div>

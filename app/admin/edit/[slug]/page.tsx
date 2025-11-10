@@ -352,6 +352,7 @@ export default function EditPostPage() {
           >
             <option value='"瓦器微声"公众号'>"瓦器微声"公众号</option>
             <option value='"盐读书"公众号'>"盐读书"公众号</option>
+            <option value='"五饼二鱼能量站"公众号'>"五饼二鱼能量站"公众号</option>
             <option value="原创">原创</option>
           </select>
         </div>
