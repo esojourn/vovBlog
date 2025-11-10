@@ -30,17 +30,20 @@ export default function HomeClient({
   const observerTarget = useRef<HTMLDivElement>(null)
 
   const filteredPosts = useMemo(() => {
-    return initialPosts.filter((post) => {
-      const matchesSearch = searchQuery
-        ? searchPosts([post], searchQuery).length > 0
-        : true
+    // 🎯 优化：先用搜索函数过滤，再用其他条件过滤
+    // 这样搜索函数只调用一次，而不是对每篇文章调用一次
+    const searchFiltered = searchQuery
+      ? searchPosts(initialPosts, searchQuery)
+      : initialPosts
+
+    return searchFiltered.filter((post) => {
       const matchesTag = selectedTag ? post.tags?.includes(selectedTag) : true
       const matchesCategory = selectedCategory
         ? post.category === selectedCategory
         : true
       const matchesSource = selectedSource ? post.source === selectedSource : true
 
-      return matchesSearch && matchesTag && matchesCategory && matchesSource && post.published
+      return matchesTag && matchesCategory && matchesSource && post.published
     })
   }, [initialPosts, searchQuery, selectedTag, selectedCategory, selectedSource])
 
