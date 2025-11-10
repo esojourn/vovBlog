@@ -63,8 +63,21 @@ export function slugify(text: string): string {
 }
 
 /**
+ * 检查 URL 是否为有效的图片源（允许 Cloudinary、localhost、data URI）
+ */
+function isValidImageUrl(url: string): boolean {
+  return (
+    url.startsWith('https://res.cloudinary.com') ||
+    url.startsWith('http://localhost') ||
+    url.startsWith('http://127.0.0.1') ||
+    url.startsWith('data:')
+  )
+}
+
+/**
  * 验证文章内容中的图片 URL
- * 检查是否有无效的图片 URL（不是 Cloudinary、本地开发或 Base64）
+ * 检查 HTML 格式 <img src=""> 和 Markdown 格式 ![](url) 的图片
+ * 确保所有图片来自有效的源（Cloudinary、本地开发或 Base64）
  * 返回: { valid: boolean; message: string; invalidUrls: string[] }
  */
 export function validateImageUrls(content: string): {
@@ -72,11 +85,29 @@ export function validateImageUrls(content: string): {
   message: string
   invalidUrls: string[]
 } {
-  // 匹配所有不是 Cloudinary、localhost、127.0.0.1 或 data: URL 的图片
-  const invalidImagePattern = /<img\s+[^>]*src=["'](?!https:\/\/res\.cloudinary\.com)(?!http:\/\/localhost)(?!http:\/\/127\.0\.0\.1)(?!data:)[^"']*["']/gi
+  const invalidUrls = new Set<string>()
 
-  const matches = content.match(invalidImagePattern)
-  if (!matches || matches.length === 0) {
+  // 1. 验证 HTML 格式的图片: <img src="...">
+  const htmlImagePattern = /<img\s+[^>]*src=["']([^"']+)["']/gi
+  let match
+  while ((match = htmlImagePattern.exec(content)) !== null) {
+    const url = match[1]
+    if (!isValidImageUrl(url)) {
+      invalidUrls.add(url)
+    }
+  }
+
+  // 2. 验证 Markdown 格式的图片: ![alt](url)
+  const markdownImagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g
+  while ((match = markdownImagePattern.exec(content)) !== null) {
+    const url = match[2]
+    if (!isValidImageUrl(url)) {
+      invalidUrls.add(url)
+    }
+  }
+
+  // 如果没有无效的 URL，验证通过
+  if (invalidUrls.size === 0) {
     return {
       valid: true,
       message: '',
@@ -85,20 +116,8 @@ export function validateImageUrls(content: string): {
   }
 
   // 提取无效图片的 URL 进行诊断
-  const urls = new Set<string>()
-  const urlPattern = /src=["']([^"']+)["']/g
-  let match
-  content.replace(invalidImagePattern, (full) => {
-    urlPattern.lastIndex = 0
-    match = urlPattern.exec(full)
-    if (match?.[1]) {
-      urls.add(match[1])
-    }
-    return full
-  })
-
-  const invalidUrls = Array.from(urls)
-  const sampleUrl = invalidUrls[0]
+  const invalidUrlArray = Array.from(invalidUrls)
+  const sampleUrl = invalidUrlArray[0]
   let diagnostic = '检测到无效的图片 URL。\n\n'
 
   if (sampleUrl?.includes('mmbiz.qpic.cn') || sampleUrl?.includes('wx.qpic.cn')) {
@@ -116,7 +135,7 @@ export function validateImageUrls(content: string): {
   return {
     valid: false,
     message: diagnostic,
-    invalidUrls,
+    invalidUrls: invalidUrlArray,
   }
 }
 
