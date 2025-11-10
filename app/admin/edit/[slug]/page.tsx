@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import TipTapEditor from '@/components/TipTapEditor'
+import { validateImageUrls } from '@/lib/utils'
 import { Post } from '@/lib/posts'
 
 interface PostFormData {
@@ -164,6 +165,13 @@ export default function EditPostPage() {
   const handleSave = async (publish: boolean) => {
     if (!formData.title.trim()) {
       alert('请输入文章标题')
+      return
+    }
+
+    // 验证图片 URL
+    const validation = validateImageUrls(formData.content)
+    if (!validation.valid) {
+      alert(validation.message)
       return
     }
 

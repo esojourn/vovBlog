@@ -476,20 +476,36 @@ export default function TipTapEditor({
         )
         const uploadedUrls = await Promise.all(uploadPromises)
 
-        // 替换 HTML 中的图片 URL
+        // 替换 HTML 中的图片 URL - 上传失败的直接删除（而不是保留原 URL）
+        const failedImages: string[] = []
         batchImageSources.forEach(({ element }, index) => {
           const newUrl = uploadedUrls[index]
+          const originalSrc = element.getAttribute('src') || ''
+
           if (newUrl) {
             element.setAttribute('src', newUrl)
             element.removeAttribute('data-src')
           } else {
-            // 上传失败时尝试保留原 URL，如果是 Base64 则删除（因为太大）
-            const src = element.getAttribute('src') || ''
-            if (src.startsWith('data:image/')) {
-              element.remove()
-            }
+            // 上传失败 - 删除该图片并记录
+            failedImages.push(originalSrc)
+            element.remove()
+            console.warn(`[Editor] 删除上传失败的图片: ${originalSrc}`)
           }
         })
+
+        // 如果有上传失败的图片，给用户警告
+        if (failedImages.length > 0) {
+          const failedCount = failedImages.length
+          const totalCount = batchImageSources.length
+          const successCount = totalCount - failedCount
+
+          console.warn(`[Editor] ${failedCount}/${totalCount} 张图片上传失败:`, failedImages)
+          alert(
+            failedCount === totalCount
+              ? '❌ 所有图片上传失败！\n\n可能原因：\n• 网络连接不稳定\n• 图片源被禁用（如微信 CDN）\n\n请重新尝试上传图片。'
+              : `⚠️ ${failedCount} 张图片上传失败已删除（${successCount} 张成功）\n\n失败原因可能是网络问题或图片源被禁用。`
+          )
+        }
 
         // 移除超过限制的图片
         imageSources.slice(MAX_BATCH_SIZE).forEach(({ element }) => {
