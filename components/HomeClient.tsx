@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import PostCard from '@/components/PostCard'
 import SearchBar from '@/components/SearchBar'
 import { searchPosts } from '@/lib/search'
@@ -13,6 +13,8 @@ interface HomeClientProps {
   allSources: string[]
 }
 
+const POSTS_PER_PAGE = 20
+
 export default function HomeClient({
   initialPosts,
   allTags,
@@ -23,19 +25,62 @@ export default function HomeClient({
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  // 🎯 无限滚动状态
+  const [displayedCount, setDisplayedCount] = useState(POSTS_PER_PAGE)
+  const observerTarget = useRef<HTMLDivElement>(null)
 
-  const filteredPosts = initialPosts.filter((post) => {
-    const matchesSearch = searchQuery
-      ? searchPosts([post], searchQuery).length > 0
-      : true
-    const matchesTag = selectedTag ? post.tags?.includes(selectedTag) : true
-    const matchesCategory = selectedCategory
-      ? post.category === selectedCategory
-      : true
-    const matchesSource = selectedSource ? post.source === selectedSource : true
+  const filteredPosts = useMemo(() => {
+    return initialPosts.filter((post) => {
+      const matchesSearch = searchQuery
+        ? searchPosts([post], searchQuery).length > 0
+        : true
+      const matchesTag = selectedTag ? post.tags?.includes(selectedTag) : true
+      const matchesCategory = selectedCategory
+        ? post.category === selectedCategory
+        : true
+      const matchesSource = selectedSource ? post.source === selectedSource : true
 
-    return matchesSearch && matchesTag && matchesCategory && matchesSource && post.published
-  })
+      return matchesSearch && matchesTag && matchesCategory && matchesSource && post.published
+    })
+  }, [initialPosts, searchQuery, selectedTag, selectedCategory, selectedSource])
+
+  // 🎯 显示的文章列表
+  const displayedPosts = useMemo(() => {
+    return filteredPosts.slice(0, displayedCount)
+  }, [filteredPosts, displayedCount])
+
+  const hasMore = displayedCount < filteredPosts.length
+
+  // 🎯 加载更多
+  const loadMore = useCallback(() => {
+    setDisplayedCount((prev) =>
+      Math.min(prev + POSTS_PER_PAGE, filteredPosts.length)
+    )
+  }, [filteredPosts.length])
+
+  // 🎯 Intersection Observer 实现自动加载
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    const target = observerTarget.current
+    if (target) observer.observe(target)
+
+    return () => {
+      if (target) observer.unobserve(target)
+    }
+  }, [hasMore, loadMore])
+
+  // 🎯 筛选条件变化时重置
+  useEffect(() => {
+    setDisplayedCount(POSTS_PER_PAGE)
+  }, [filteredPosts.length])
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -87,13 +132,28 @@ export default function HomeClient({
           </p>
         </div>
       ) : (
-        <div className="mb-8 grid gap-6">
-          {filteredPosts.map((post) => (
-            <PostCard key={post.slug} post={post} />
-          ))}
-        </div>
-      )}
+        <>
+          <div className="mb-8 grid gap-6">
+            {displayedPosts.map((post) => (
+              <PostCard key={post.slug} post={post} />
+            ))}
+          </div>
 
+          {/* 无限滚动加载触发器 */}
+          {hasMore && (
+            <div ref={observerTarget} className="h-20 flex items-center justify-center mb-8">
+              <span className="text-muted-foreground">加载更多...</span>
+            </div>
+          )}
+
+          {/* 已加载全部 */}
+          {!hasMore && displayedPosts.length > 0 && (
+            <div className="text-center py-8 text-muted-foreground mb-8">
+              已显示全部 {filteredPosts.length} 篇文章
+            </div>
+          )}
+        </>
+      )}
 
       {/* 分类筛选 */}
       {allCategories.length > 0 && (

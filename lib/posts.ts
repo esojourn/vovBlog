@@ -21,6 +21,32 @@ export interface Post extends PostMeta {
 
 const postsDirectory = path.join(process.cwd(), 'content/posts')
 
+// 🎯 缓存机制
+const CACHE_DURATION = 60 * 1000 // 60 秒
+let postsCache: { data: Post[], timestamp: number } | null = null
+
+function getCachedPosts(cachedPosts: { data: Post[], timestamp: number } | null): { data: Post[], timestamp: number } | null {
+  if (!cachedPosts) return null
+
+  const now = Date.now()
+  const age = now - cachedPosts.timestamp
+
+  // 缓存过期（开发环境禁用缓存）
+  if (process.env.NODE_ENV === 'development' || age > CACHE_DURATION) {
+    return null
+  }
+
+  return cachedPosts
+}
+
+function setCachePost(posts: Post[]): void {
+  postsCache = { data: posts, timestamp: Date.now() }
+}
+
+function clearPostsCache(): void {
+  postsCache = null
+}
+
 // 🔧 HTML 检测和转换函数
 function isHtmlContent(content: string): boolean {
   return /<[a-z][^>]*>/i.test(content.trim())
@@ -97,28 +123,51 @@ function convertToMarkdown(html: string): string {
   return markdown
 }
 
-export async function getAllPosts(): Promise<Post[]> {
+export async function getAllPosts(includeContent: boolean = true): Promise<Post[]> {
   try {
+    // 🎯 检查缓存
+    const cached = getCachedPosts(postsCache)
+    if (cached) {
+      const posts = cached.data
+      // 如果缓存的是完整内容，可以直接返回
+      // 如果请求的是不完整内容，则从缓存中移除 content
+      if (!includeContent) {
+        return posts.map(p => ({ ...p, content: '' }))
+      }
+      return posts
+    }
+
     const fileNames = await fs.readdir(postsDirectory)
     const posts = await Promise.all(
       fileNames
         .filter((fileName) => fileName.endsWith('.mdx'))
         .map(async (fileName) => {
           const slug = fileName.replace(/\.mdx$/, '')
-          return getPostBySlug(slug)
+          // 总是读取完整内容用于缓存
+          return getPostBySlug(slug, true)
         })
     )
 
-    return posts
+    const sortedPosts = posts
       .filter((post): post is Post => post !== null)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    // 🎯 缓存完整内容版本
+    setCachePost(sortedPosts)
+
+    // 🎯 如果不需要内容，返回去掉 content 的版本
+    if (!includeContent) {
+      return sortedPosts.map(p => ({ ...p, content: '' }))
+    }
+
+    return sortedPosts
       // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   } catch (error) {
     return []
   }
 }
 
-export async function getPostBySlug(slug: string): Promise<Post | null> {
+export async function getPostBySlug(slug: string, includeContent: boolean = true): Promise<Post | null> {
   try {
     const filePath = path.join(postsDirectory, `${slug}.mdx`)
     const fileContents = await fs.readFile(filePath, 'utf8')
@@ -126,7 +175,8 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 
     return {
       slug,
-      content,
+      // 🎯 优化：根据参数决定是否包含完整内容
+      content: includeContent ? content : '',
       title: data.title || '',
       date: data.date || new Date().toISOString(),
       tags: data.tags || [],
@@ -161,11 +211,17 @@ export async function savePost(slug: string, post: Omit<Post, 'slug'>): Promise<
 
   await fs.mkdir(postsDirectory, { recursive: true })
   await fs.writeFile(filePath, fileContent, 'utf8')
+
+  // 🎯 清空缓存，确保下次读取最新数据
+  clearPostsCache()
 }
 
 export async function deletePost(slug: string): Promise<void> {
   const filePath = path.join(postsDirectory, `${slug}.mdx`)
   await fs.unlink(filePath)
+
+  // 🎯 清空缓存，确保下次读取最新数据
+  clearPostsCache()
 }
 
 export async function getPostsByTag(tag: string): Promise<Post[]> {
@@ -212,5 +268,34 @@ export async function getAllSources(): Promise<string[]> {
     }
   })
 
+  return Array.from(sourcesSet).sort()
+}
+
+// 🎯 新增：从已加载的文章列表中提取数据（避免重复读取文件系统）
+export function extractTags(posts: Post[]): string[] {
+  const tagsSet = new Set<string>()
+  posts.forEach((post) => {
+    post.tags?.forEach((tag) => tagsSet.add(tag))
+  })
+  return Array.from(tagsSet).sort()
+}
+
+export function extractCategories(posts: Post[]): string[] {
+  const categoriesSet = new Set<string>()
+  posts.forEach((post) => {
+    if (post.category) {
+      categoriesSet.add(post.category)
+    }
+  })
+  return Array.from(categoriesSet).sort()
+}
+
+export function extractSources(posts: Post[]): string[] {
+  const sourcesSet = new Set<string>()
+  posts.forEach((post) => {
+    if (post.source) {
+      sourcesSet.add(post.source)
+    }
+  })
   return Array.from(sourcesSet).sort()
 }
