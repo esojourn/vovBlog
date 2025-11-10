@@ -3,6 +3,33 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import TipTapEditor from '@/components/TipTapEditor'
+import { validateImageUrls } from '@/lib/utils'
+
+// 公众号名称到来源的映射
+const ACCOUNT_SOURCE_MAP: Record<string, string> = {
+  '瓦器微声': '"瓦器微声"公众号',
+  '盐读书': '"盐读书"公众号',
+  // 未来可以继续添加更多公众号
+}
+
+// 根据公众号名称匹配来源
+function matchAccountSource(accountName: string): string | null {
+  if (!accountName) return null
+
+  // 精确匹配
+  if (ACCOUNT_SOURCE_MAP[accountName]) {
+    return ACCOUNT_SOURCE_MAP[accountName]
+  }
+
+  // 模糊匹配（包含关系）
+  for (const [key, value] of Object.entries(ACCOUNT_SOURCE_MAP)) {
+    if (accountName.includes(key) || key.includes(accountName)) {
+      return value
+    }
+  }
+
+  return null
+}
 
 interface PostFormData {
   title: string
@@ -104,12 +131,24 @@ export default function NewPostPage() {
       }
 
       // 填充表单数据
+      // 🆕 根据公众号名称自动设置来源
+      let autoSource = '"瓦器微声"公众号'  // 默认值
+      if (data.accountName) {
+        const matchedSource = matchAccountSource(data.accountName)
+        if (matchedSource) {
+          autoSource = matchedSource
+          console.log(`[Import] 自动识别公众号: ${data.accountName} → ${matchedSource}`)
+        } else {
+          console.log(`[Import] 未识别的公众号: ${data.accountName}，保持默认来源`)
+        }
+      }
+
       setFormData((prev) => ({
         ...prev,
         title: data.title || '',
         content: processedContent,
         originalUrl: importUrl,
-        source: '"瓦器微声"公众号',
+        source: autoSource,
         date: data.publishDate || new Date().toISOString(),
       }))
 
@@ -125,12 +164,9 @@ export default function NewPostPage() {
   }
 
   const validateContent = (content: string): boolean => {
-    // 检查编辑器中是否有上传进度中的或无效的图片
-    // 允许 Cloudinary URL 或本地开发 URL（localhost, 127.0.0.1）
-    const invalidImagePattern = /<img\s+[^>]*src=["'](?!https:\/\/res\.cloudinary\.com)(?!http:\/\/localhost)(?!http:\/\/127\.0\.0\.1)(?!data:)[^"']*["']/gi
-
-    if (invalidImagePattern.test(content)) {
-      alert('检测到无效的图片 URL。请确保所有图片都已成功上传到 Cloudinary。')
+    const validation = validateImageUrls(content)
+    if (!validation.valid) {
+      alert(validation.message)
       return false
     }
     return true
@@ -314,6 +350,7 @@ export default function NewPostPage() {
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value='"瓦器微声"公众号'>"瓦器微声"公众号</option>
+            <option value='"盐读书"公众号'>"盐读书"公众号</option>
             <option value="原创">原创</option>
           </select>
         </div>

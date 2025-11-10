@@ -441,6 +441,12 @@ export default function TipTapEditor({
           const cleanHtml = sanitizeHtml(html)
           const markdown = htmlToMarkdown(cleanHtml)
           editorInstance.chain().focus().insertContent(markdown).run()
+          // 🔧 新增：立即同步编辑器内容到表单，避免时序问题
+          // 使用 setTimeout 让 TipTap 有机会处理 insertContent，然后立即同步
+          setTimeout(() => {
+            const currentMarkdown = editorInstance.storage.markdown.getMarkdown()
+            onChange?.(currentMarkdown)
+          }, 0)
           return
         }
 
@@ -477,20 +483,36 @@ export default function TipTapEditor({
         )
         const uploadedUrls = await Promise.all(uploadPromises)
 
-        // 替换 HTML 中的图片 URL
+        // 替换 HTML 中的图片 URL - 上传失败的直接删除（而不是保留原 URL）
+        const failedImages: string[] = []
         batchImageSources.forEach(({ element }, index) => {
           const newUrl = uploadedUrls[index]
+          const originalSrc = element.getAttribute('src') || ''
+
           if (newUrl) {
             element.setAttribute('src', newUrl)
             element.removeAttribute('data-src')
           } else {
-            // 上传失败时尝试保留原 URL，如果是 Base64 则删除（因为太大）
-            const src = element.getAttribute('src') || ''
-            if (src.startsWith('data:image/')) {
-              element.remove()
-            }
+            // 上传失败 - 删除该图片并记录
+            failedImages.push(originalSrc)
+            element.remove()
+            console.warn(`[Editor] 删除上传失败的图片: ${originalSrc}`)
           }
         })
+
+        // 如果有上传失败的图片，给用户警告
+        if (failedImages.length > 0) {
+          const failedCount = failedImages.length
+          const totalCount = batchImageSources.length
+          const successCount = totalCount - failedCount
+
+          console.warn(`[Editor] ${failedCount}/${totalCount} 张图片上传失败:`, failedImages)
+          alert(
+            failedCount === totalCount
+              ? '❌ 所有图片上传失败！\n\n可能原因：\n• 网络连接不稳定\n• 图片源被禁用（如微信 CDN）\n\n请重新尝试上传图片。'
+              : `⚠️ ${failedCount} 张图片上传失败已删除（${successCount} 张成功）\n\n失败原因可能是网络问题或图片源被禁用。`
+          )
+        }
 
         // 移除超过限制的图片
         imageSources.slice(MAX_BATCH_SIZE).forEach(({ element }) => {
@@ -505,6 +527,13 @@ export default function TipTapEditor({
 
         const successCount = uploadedUrls.filter((url) => url).length
         console.log(`[Editor] 成功处理 ${successCount}/${batchImageSources.length} 张图片`)
+
+        // 🔧 新增：粘贴完成后立即同步编辑器内容到表单，避免时序问题
+        // 使用 setTimeout 让 TipTap 有机会处理 insertContent，然后立即同步
+        setTimeout(() => {
+          const currentMarkdown = editorInstance.storage.markdown.getMarkdown()
+          onChange?.(currentMarkdown)
+        }, 0)
       } catch (err) {
         console.error('[Editor] 处理 HTML 内容失败:', err)
         alert(`处理内容失败: ${err instanceof Error ? err.message : '未知错误'}`)
@@ -513,7 +542,7 @@ export default function TipTapEditor({
         setUploadProgress(null)
       }
     },
-    [uploadImageFromSource, sanitizeHtml]
+    [uploadImageFromSource, sanitizeHtml, onChange]
   )
 
   const editor = useEditor({
@@ -592,27 +621,38 @@ export default function TipTapEditor({
 
   // 🔧 当 content prop 变化时，更新编辑器内容
   useEffect(() => {
-    if (editor && initialContent && initialContent.length > 0) {
-      // 检查编辑器当前内容是否为空或与新内容不同
-      const currentContent = editor.getHTML()
-      if (currentContent !== initialContent) {
-        console.log('[Editor] 检测到内容更新，检查格式...')
+    if (!editor || !initialContent || initialContent.length === 0) return
 
-        // 🔧 新增：如果内容是 HTML 格式，先转换为 Markdown
-        let contentToSet = initialContent
-        if (isHtmlContent(initialContent)) {
-          console.log('[Editor] 检测到 HTML 格式，自动转换为 Markdown')
-          try {
-            contentToSet = htmlToMarkdown(initialContent)
-            console.log('[Editor] HTML 转换成功')
-          } catch (err) {
-            console.warn('[Editor] HTML 转换失败，使用原始内容:', err)
-            contentToSet = initialContent
-          }
-        }
+    let contentToSet = initialContent
 
-        editor.commands.setContent(contentToSet, false)
+    // 如果输入是 HTML 格式，先转换为 Markdown
+    if (isHtmlContent(initialContent)) {
+      console.log('[Editor] 检测到 HTML 格式，自动转换为 Markdown')
+      try {
+        contentToSet = htmlToMarkdown(initialContent)
+        console.log('[Editor] HTML 转换成功')
+      } catch (err) {
+        console.warn('[Editor] HTML 转换失败，使用原始内容:', err)
+        contentToSet = initialContent
       }
+    }
+
+    // 重要：比较的都应该是 Markdown 格式，避免 HTML vs Markdown 的格式混乱
+    const currentMarkdown = editor.storage.markdown.getMarkdown()
+
+    // 只有当内容确实不同时才更新，避免无限循环
+    if (currentMarkdown !== contentToSet) {
+      console.log('[Editor] 检测到内容变化，更新编辑器内容...')
+      editor.commands.setContent(contentToSet, false)
+
+      // 🔧 新增：主动同步编辑器内容到表单（与粘贴功能保持一致）
+      // 避免 setContent(..., false) 禁用 onUpdate 导致的内容不同步问题
+      setTimeout(() => {
+        const newMarkdown = editor.storage.markdown.getMarkdown()
+        // 只调用一次 onChange，且只有当内容真的改变时
+        onChange?.(newMarkdown)
+        console.log('[Editor] 内容已同步到表单（来自导入）')
+      }, 0)
     }
   }, [editor, initialContent])
 

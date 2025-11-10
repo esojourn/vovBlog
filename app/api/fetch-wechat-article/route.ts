@@ -7,6 +7,7 @@ interface FetchResult {
   content?: string
   images?: string[]
   publishDate?: string
+  accountName?: string
   error?: string
 }
 
@@ -56,20 +57,47 @@ function isValidWeChatUrl(url: string): boolean {
 }
 
 /**
- * 从 HTML 提取纯文本中的所有图片 URL
+ * 标准化图片 URL - 移除查询参数和锚点，避免同一张图的不同变体
+ * 例: https://host/path?a=1&b=2#anchor → https://host/path
+ */
+function normalizeImageUrl(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    // 只保留协议、域名、路径，移除查询参数和锚点
+    return `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`
+  } catch {
+    // URL 解析失败，返回原始 URL
+    return url
+  }
+}
+
+/**
+ * 从 HTML 提取纯文本中的所有图片 URL（去重）
  */
 function extractImageUrls(html: string): string[] {
-  const urls: string[] = []
-  // 匹配 src 属性中的 URL
+  const urlMap = new Map<string, string>()  // 标准化 URL → 原始 URL
   const srcRegex = /src=["']([^"']+)["']/g
   let match
+
   while ((match = srcRegex.exec(html)) !== null) {
-    const url = match[1]
-    if (url.startsWith('http')) {
-      urls.push(url)
+    const originalUrl = match[1]
+    if (originalUrl.startsWith('http')) {
+      const normalizedUrl = normalizeImageUrl(originalUrl)
+
+      // 如果这个标准化 URL 已存在，跳过（去重）
+      if (!urlMap.has(normalizedUrl)) {
+        urlMap.set(normalizedUrl, originalUrl)
+        console.log(`[WeChat Fetch] 提取图片: ${originalUrl}`)
+      } else {
+        console.log(`[WeChat Fetch] 跳过重复图片: ${originalUrl}`)
+      }
     }
   }
-  return [...new Set(urls)] // 去重
+
+  const uniqueUrls = Array.from(urlMap.values())
+  console.log(`[WeChat Fetch] 提取完成: 总共 ${uniqueUrls.length} 张唯一图片`)
+
+  return uniqueUrls
 }
 
 /**
@@ -321,8 +349,39 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
       console.warn('[WeChat Fetch] 提取日期失败:', err)
     }
 
+    // 提取公众号名称
+    let accountName = ''
+    try {
+      // 微信公众号名称的常见选择器
+      const accountSelectors = [
+        '#js_name',                    // 主要选择器
+        '.rich_media_meta_nickname',   // 备用选择器 1
+      ]
 
-    // 提取正文内容
+      for (const selector of accountSelectors) {
+        try {
+          const accountElement = await page.$(selector)
+          if (accountElement) {
+            const accountText = await accountElement.textContent()
+            const trimmed = accountText?.trim() || ''
+            if (trimmed) {
+              accountName = trimmed
+              console.log(`[WeChat Fetch] 通过选择器 ${selector} 提取到公众号: ${accountName}`)
+              break
+            }
+          }
+        } catch {
+          // 继续尝试下一个选择器
+        }
+      }
+
+      if (!accountName) {
+        console.warn('[WeChat Fetch] 未能提取到公众号名称')
+      }
+    } catch (err) {
+      console.warn('[WeChat Fetch] 提取公众号名称失败:', err)
+    }
+
     let content = ''
     try {
       const contentElement = await page.$('#js_content')
@@ -353,23 +412,14 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
 
     await context.close()
 
-    // 🔧 新增：将 HTML 内容转换为 Markdown 再返回
-    let markdownContent = content
-    if (content) {
-      try {
-        markdownContent = htmlToMarkdown(content)
-        console.log('[WeChat Fetch] HTML 已转换为 Markdown')
-      } catch (err) {
-        console.warn('[WeChat Fetch] HTML 转换失败，使用原始内容:', err)
-        markdownContent = content
-      }
-    }
-
+    // 🔧 修复：返回清洗后的 HTML 格式内容
+    // 编辑器会自动将 HTML 转换为 Markdown，前端图片 URL 替换逻辑也需要 HTML 格式
     return {
       title,
-      content: markdownContent,
+      content,  // 直接返回清洗后的 HTML，不进行 Markdown 转换
       images,
       publishDate: publishDate || undefined,
+      accountName: accountName || undefined,
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)

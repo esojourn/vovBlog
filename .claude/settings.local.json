@@ -20,7 +20,10 @@
       "Read(//root/.cache/ms-playwright/**)",
       "Bash(git add:*)",
       "mcp__open-websearch__search",
-      "mcp__open-websearch__fetchGithubReadme"
+      "mcp__open-websearch__fetchGithubReadme",
+      "Bash(python3:*)",
+      "Bash(bun run dev)",
+      "Bash(bunx tsc:*)"
     ],
     "deny": [],
     "ask": []
