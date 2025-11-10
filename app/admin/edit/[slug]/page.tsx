@@ -351,6 +351,7 @@ export default function EditPostPage() {
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value='"瓦器微声"公众号'>"瓦器微声"公众号</option>
+            <option value='"盐读书"公众号'>"盐读书"公众号</option>
             <option value="原创">原创</option>
           </select>
         </div>

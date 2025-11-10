@@ -7,6 +7,7 @@ interface FetchResult {
   content?: string
   images?: string[]
   publishDate?: string
+  accountName?: string
   error?: string
 }
 
@@ -348,8 +349,39 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
       console.warn('[WeChat Fetch] 提取日期失败:', err)
     }
 
+    // 提取公众号名称
+    let accountName = ''
+    try {
+      // 微信公众号名称的常见选择器
+      const accountSelectors = [
+        '#js_name',                    // 主要选择器
+        '.rich_media_meta_nickname',   // 备用选择器 1
+      ]
 
-    // 提取正文内容
+      for (const selector of accountSelectors) {
+        try {
+          const accountElement = await page.$(selector)
+          if (accountElement) {
+            const accountText = await accountElement.textContent()
+            const trimmed = accountText?.trim() || ''
+            if (trimmed) {
+              accountName = trimmed
+              console.log(`[WeChat Fetch] 通过选择器 ${selector} 提取到公众号: ${accountName}`)
+              break
+            }
+          }
+        } catch {
+          // 继续尝试下一个选择器
+        }
+      }
+
+      if (!accountName) {
+        console.warn('[WeChat Fetch] 未能提取到公众号名称')
+      }
+    } catch (err) {
+      console.warn('[WeChat Fetch] 提取公众号名称失败:', err)
+    }
+
     let content = ''
     try {
       const contentElement = await page.$('#js_content')
@@ -387,6 +419,7 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
       content,  // 直接返回清洗后的 HTML，不进行 Markdown 转换
       images,
       publishDate: publishDate || undefined,
+      accountName: accountName || undefined,
     }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
