@@ -81,7 +81,10 @@ export default function RootLayout({
                     </a>
                     <div className="text-center sm:text-left text-muted-foreground text-sm">
                       <p>
-                        瓦器 WaQi.uk . 本站程序代码及原创内容采用 CC0 协议，放弃所有版权，可自由使用。
+                        <Link
+                          href="https://www.waqi.uk/"
+                          className="hover:text-foreground transition-colors underline"
+                        >瓦器 WaQi.uk</Link> . 本站程序代码及原创内容采用 CC0 协议，放弃所有版权，可自由使用。
                         转载文章版权归原作者所有。
                         <span className="mx-2">·</span>
                         <Link
