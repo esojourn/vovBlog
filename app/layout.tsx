@@ -53,11 +53,14 @@ export default function RootLayout({
         <ThemeProvider>
           <RouteChangeListener />
           <div className="min-h-screen bg-background flex flex-col">
-            <header className="border-b">
+            <header className="border-b relative">
               <div className="container mx-auto px-4 py-6">
                 <nav className="flex items-center justify-center">
                   <LogoImage />
                 </nav>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <ThemeToggle />
+                </div>
               </div>
             </header>
             <main className="container mx-auto px-4 py-8 flex-1">
