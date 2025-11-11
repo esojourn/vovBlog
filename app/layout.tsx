@@ -7,6 +7,7 @@ import { LogoImage } from '@/components/LogoImage'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { AdminLink } from '@/components/AdminLink'
 import { CreateButton } from '@/components/CreateButton'
+import { Analytics } from '@vercel/analytics/next'
 import { GoogleAnalytics } from '@/components/GoogleAnalytics'
 import { RouteChangeListener } from '@/components/RouteChangeListener'
 import './globals.css'
@@ -107,6 +108,7 @@ export default function RootLayout({
           </div>
         </ThemeProvider>
         <GoogleAnalytics />
+        <Analytics />
       </body>
     </html>
   )
