@@ -16,9 +16,24 @@ export function formatDate(date: string | Date): string {
 }
 
 export function calculateReadingTime(content: string): number {
-  const wordsPerMinute = 200
-  const words = content.trim().split(/\s+/).length
-  return Math.ceil(words / wordsPerMinute)
+  // 统计中文字符数
+  const chineseChars = content.match(/[\u4e00-\u9fa5]/g) || []
+  const chineseCount = chineseChars.length
+
+  // 移除中文字符后统计英文单词数
+  const englishContent = content.replace(/[\u4e00-\u9fa5]/g, ' ')
+  const englishWords = englishContent
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+  const englishCount = englishWords.length
+
+  // 分别计算阅读时间
+  const chineseReadingTime = chineseCount / 300 // 300 字/分钟
+  const englishReadingTime = englishCount / 200 // 200 词/分钟
+
+  // 总时间向上取整，最少 1 分钟
+  return Math.max(1, Math.ceil(chineseReadingTime + englishReadingTime))
 }
 
 export function slugify(text: string): string {
