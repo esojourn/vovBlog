@@ -11,6 +11,7 @@ interface HomeClientProps {
   allTags: string[]
   allCategories: string[]
   allSources: string[]
+  currentSubdomain?: string | null
 }
 
 const POSTS_PER_PAGE = 20
@@ -20,6 +21,7 @@ export default function HomeClient({
   allTags,
   allCategories,
   allSources,
+  currentSubdomain,
 }: HomeClientProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
@@ -92,8 +94,8 @@ export default function HomeClient({
         <SearchBar onSearch={setSearchQuery} />
       </div>
 
-      {/* 来源筛选 */}
-      {allSources.length > 0 && (
+      {/* 来源筛选 - 在子域名访问时隐藏 */}
+      {!currentSubdomain && allSources.length > 0 && (
         <div className="mb-6">
           <h2 className="text-sm font-medium mb-2">文章来源</h2>
           <div className="flex flex-wrap gap-2">
