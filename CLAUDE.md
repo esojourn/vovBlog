@@ -185,8 +185,40 @@ description: 文章描述
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-NEXT_PUBLIC_SITE_URL=http://localhost:3000  # 可选，用于 SEO
+NEXT_PUBLIC_SITE_URL=https://www.waqi.uk  # 主域名，用于子域名识别和 SEO
 ```
+
+### 子域名配置说明
+
+项目支持通过子域名访问特定公众号的文章。子域名映射关系在 `lib/subdomain-config.ts` 中定义：
+
+```typescript
+export const SUBDOMAIN_SOURCE_MAP: Record<string, string> = {
+  'wqws': '"瓦器微声"公众号',
+  'yds': '"盐读书"公众号',
+  'wbey': '"五饼二鱼能量站"公众号',
+}
+```
+
+#### 访问行为
+
+| 访问地址 | 显示内容 | 文章来源筛选 |
+|---------|---------|------------|
+| `www.waqi.uk` | 所有公众号文章 | ✅ 显示 |
+| `wqws.waqi.uk` | 仅瓦器微声文章 | ❌ 隐藏 |
+| `yds.waqi.uk` | 仅盐读书文章 | ❌ 隐藏 |
+| `wbey.waqi.uk` | 仅五饼二鱼文章 | ❌ 隐藏 |
+
+#### 添加新的子域名映射
+
+如需添加新的公众号来源与子域名的映射：
+
+1. 编辑 `lib/subdomain-config.ts`
+2. 在 `SUBDOMAIN_SOURCE_MAP` 中添加新的映射项
+3. 在 Vercel 项目设置中添加对应的域名
+4. 在域名提供商的 DNS 配置中添加 CNAME 记录
+
+
 
 ## 开发注意事项
 
@@ -223,11 +255,61 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000  # 可选，用于 SEO
 - 或修改 `editorProps` 处理拖拽/粘贴逻辑
 
 ### 部署到 Vercel
+
 注意：需要在 Vercel 中配置环境变量。如果要持久化存储，考虑：
 - 切换到数据库方案（如 MongoDB、PostgreSQL）
 - 或使用 Vercel KV/Blob 存储
 
-**Bun 部署配置**（可选但推荐）：
+#### Vercel 子域名配置（必需）
+
+1. **在 Vercel 项目中添加域名**
+   - 登录 Vercel Dashboard → 选择项目 → Settings → Domains
+   - 添加以下域名：
+     - `www.waqi.uk`（主域名）
+     - `wqws.waqi.uk`
+     - `yds.waqi.uk`
+     - `wbey.waqi.uk`
+
+2. **配置 DNS 记录**
+   - 登录您的域名提供商（例如：Cloudflare、阿里云、腾讯云）
+   - 为每个子域名添加 CNAME 记录指向 Vercel：
+     ```
+     类型    名称    值
+     CNAME   www     cname.vercel-dns.com
+     CNAME   wqws    cname.vercel-dns.com
+     CNAME   yds     cname.vercel-dns.com
+     CNAME   wbey    cname.vercel-dns.com
+     ```
+   - DNS 生效通常需要 5-30 分钟
+
+3. **环境变量配置**
+   - Vercel Dashboard → 项目 → Settings → Environment Variables
+   - 确保以下环境变量已正确设置：
+     ```
+     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+     CLOUDINARY_API_KEY
+     CLOUDINARY_API_SECRET
+     NEXT_PUBLIC_SITE_URL=https://www.waqi.uk
+     ```
+
+#### 验证子域名配置
+
+部署完成后，可以通过以下方式验证：
+
+```bash
+# 检查主域名
+curl -I https://www.waqi.uk
+
+# 检查子域名
+curl -I https://yds.waqi.uk
+curl -I https://wqws.waqi.uk
+curl -I https://wbey.waqi.uk
+```
+
+所有域名应该返回 HTTP 200 状态码。
+
+#### Bun 部署配置
+
 1. 在 `package.json` 中添加 packageManager 字段：
    ```json
    {
