@@ -23,7 +23,9 @@
       "mcp__open-websearch__fetchGithubReadme",
       "Bash(python3:*)",
       "Bash(bun run dev)",
-      "Bash(bunx tsc:*)"
+      "Bash(bunx tsc:*)",
+      "Bash(node -e:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

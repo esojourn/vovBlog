@@ -7,6 +7,7 @@ import { LogoImage } from '@/components/LogoImage'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { AdminLink } from '@/components/AdminLink'
 import { CreateButton } from '@/components/CreateButton'
+import { Analytics } from '@vercel/analytics/next'
 import { GoogleAnalytics } from '@/components/GoogleAnalytics'
 import { RouteChangeListener } from '@/components/RouteChangeListener'
 import './globals.css'
@@ -53,11 +54,14 @@ export default function RootLayout({
         <ThemeProvider>
           <RouteChangeListener />
           <div className="min-h-screen bg-background flex flex-col">
-            <header className="border-b">
+            <header className="border-b relative">
               <div className="container mx-auto px-4 py-6">
                 <nav className="flex items-center justify-center">
                   <LogoImage />
                 </nav>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <ThemeToggle />
+                </div>
               </div>
             </header>
             <main className="container mx-auto px-4 py-8 flex-1">
@@ -78,7 +82,10 @@ export default function RootLayout({
                     </a>
                     <div className="text-center sm:text-left text-muted-foreground text-sm">
                       <p>
-                        瓦器 WaQi.uk . 本站程序代码及原创内容采用 CC0 协议，放弃所有版权，可自由使用。
+                        <Link
+                          href="https://www.waqi.uk/"
+                          className="hover:text-foreground transition-colors underline"
+                        >瓦器 WaQi.uk</Link> . 本站程序代码及原创内容采用 CC0 协议，放弃所有版权，可自由使用。
                         转载文章版权归原作者所有。
                         <span className="mx-2">·</span>
                         <Link
@@ -101,6 +108,7 @@ export default function RootLayout({
           </div>
         </ThemeProvider>
         <GoogleAnalytics />
+        <Analytics />
       </body>
     </html>
   )

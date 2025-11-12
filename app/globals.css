@@ -285,3 +285,13 @@
   @apply bg-card;
 }
 
+/* prose 链接样式 */
+.prose a {
+  @apply text-primary underline hover:text-primary/80 transition-colors;
+}
+
+/* 深色模式下的 prose 链接样式 */
+.dark .prose a {
+  @apply text-primary underline hover:text-primary/80 transition-colors;
+}
+

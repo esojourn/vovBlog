@@ -406,7 +406,7 @@ async function fetchWeChatArticle(url: string): Promise<FetchResult> {
 
     if (!title && !content) {
       return {
-        error: '无法提取文章内容，可能被反爬虫拦截或页面结构已变更',
+        error: '无法提取文章内容，可能由于本地网络环境变化，也可能被反爬虫拦截或页面结构已变更',
       }
     }
 

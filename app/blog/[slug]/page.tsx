@@ -95,7 +95,7 @@ export default async function BlogPostPage({
       </header>
 
       {/* 文章内容 */}
-      <div className="prose prose-lg max-w-none">
+      <div className="prose prose-xl max-w-none">
         <MDXRemote source={post.content} />
       </div>
       
