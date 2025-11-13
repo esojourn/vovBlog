@@ -2,6 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import matter from 'gray-matter'
 import TurndownService from 'turndown'
+import { getDefaultSource } from '@/lib/source-config'
 
 export interface PostMeta {
   title: string
@@ -183,7 +184,7 @@ export async function getPostBySlug(slug: string, includeContent: boolean = true
       category: data.category || '',
       published: data.published !== false,
       description: data.description || '',
-      source: data.source || '"瓦器微声"公众号',
+      source: data.source || getDefaultSource(),
       originalUrl: data.originalUrl || '',
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars

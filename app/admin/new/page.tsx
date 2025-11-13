@@ -4,33 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import TipTapEditor from '@/components/TipTapEditor'
 import { validateImageUrls } from '@/lib/utils'
-
-// 公众号名称到来源的映射
-const ACCOUNT_SOURCE_MAP: Record<string, string> = {
-  '瓦器微声': '"瓦器微声"公众号',
-  '盐读书': '"盐读书"公众号',
-  '五饼二鱼能量站': '"五饼二鱼能量站"公众号',
-  // 未来可以继续添加更多公众号
-}
-
-// 根据公众号名称匹配来源
-function matchAccountSource(accountName: string): string | null {
-  if (!accountName) return null
-
-  // 精确匹配
-  if (ACCOUNT_SOURCE_MAP[accountName]) {
-    return ACCOUNT_SOURCE_MAP[accountName]
-  }
-
-  // 模糊匹配（包含关系）
-  for (const [key, value] of Object.entries(ACCOUNT_SOURCE_MAP)) {
-    if (accountName.includes(key) || key.includes(accountName)) {
-      return value
-    }
-  }
-
-  return null
-}
+import {
+  matchSourceByAccountName,
+  getDefaultSource,
+  getAllSourceOptions,
+} from '@/lib/source-config'
 
 interface PostFormData {
   title: string
@@ -53,7 +31,7 @@ export default function NewPostPage() {
     category: '',
     published: false,
     description: '',
-    source: '"瓦器微声"公众号',
+    source: getDefaultSource(),
     originalUrl: '',
     date: new Date().toISOString(),
   })
@@ -133,9 +111,9 @@ export default function NewPostPage() {
 
       // 填充表单数据
       // 🆕 根据公众号名称自动设置来源
-      let autoSource = '"瓦器微声"公众号'  // 默认值
+      let autoSource = getDefaultSource()  // 使用统一配置的默认值
       if (data.accountName) {
-        const matchedSource = matchAccountSource(data.accountName)
+        const matchedSource = matchSourceByAccountName(data.accountName)
         if (matchedSource) {
           autoSource = matchedSource
           console.log(`[Import] 自动识别公众号: ${data.accountName} → ${matchedSource}`)
@@ -350,10 +328,11 @@ export default function NewPostPage() {
             }
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value='"瓦器微声"公众号'>"瓦器微声"公众号</option>
-            <option value='"盐读书"公众号'>"盐读书"公众号</option>
-            <option value='"五饼二鱼能量站"公众号'>"五饼二鱼能量站"公众号</option>
-            <option value="原创">原创</option>
+            {getAllSourceOptions().map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
 

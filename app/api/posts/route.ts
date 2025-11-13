@@ -6,6 +6,7 @@ import {
   deletePost,
 } from '@/lib/posts'
 import { slugify } from '@/lib/utils'
+import { getDefaultSource } from '@/lib/source-config'
 
 export async function GET(request: Request) {
   try {
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
       category: data.category || '',
       published: data.published !== false,
       description: data.description || '',
-      source: data.source || '"瓦器微声"公众号',
+      source: data.source || getDefaultSource(),
       originalUrl: data.originalUrl || '',
     })
 
@@ -81,7 +82,7 @@ export async function PUT(request: Request) {
       category: data.category || '',
       published: data.published !== false,
       description: data.description || '',
-      source: data.source || '"瓦器微声"公众号',
+      source: data.source || getDefaultSource(),
       originalUrl: data.originalUrl || '',
     })
 

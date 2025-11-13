@@ -5,6 +5,10 @@ import { useRouter, useParams } from 'next/navigation'
 import TipTapEditor from '@/components/TipTapEditor'
 import { validateImageUrls } from '@/lib/utils'
 import { Post } from '@/lib/posts'
+import {
+  getDefaultSource,
+  getAllSourceOptions,
+} from '@/lib/source-config'
 
 interface PostFormData {
   title: string
@@ -31,7 +35,7 @@ export default function EditPostPage() {
     published: false,
     description: '',
     date: '',
-    source: '"瓦器微声"公众号',
+    source: getDefaultSource(),
     originalUrl: '',
   })
   const [tagInput, setTagInput] = useState('')
@@ -60,7 +64,7 @@ export default function EditPostPage() {
         published: post.published !== false,
         description: post.description || '',
         date: post.date,
-        source: post.source || '"瓦器微声"公众号',
+        source: post.source || getDefaultSource(),
         originalUrl: post.originalUrl || '',
       })
       if (post.originalUrl) {
@@ -350,10 +354,11 @@ export default function EditPostPage() {
             }
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value='"瓦器微声"公众号'>"瓦器微声"公众号</option>
-            <option value='"盐读书"公众号'>"盐读书"公众号</option>
-            <option value='"五饼二鱼能量站"公众号'>"五饼二鱼能量站"公众号</option>
-            <option value="原创">原创</option>
+            {getAllSourceOptions().map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
 
