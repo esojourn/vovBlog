@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Pencil } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 
 interface EditButtonProps {
   slug: string
@@ -36,13 +36,23 @@ export function EditButton({ slug }: EditButtonProps) {
   }
 
   return (
-    <Link
-      href={`/admin/edit/${slug}`}
-      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium mt-4 mb-4"
-      title="编辑这篇文章"
-    >
-      <Pencil className="w-4 h-4" />
-      <span>编辑</span>
-    </Link>
+    <div className="flex gap-3 mt-4 mb-4">
+      <Link
+        href={`/admin/edit/${slug}`}
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium"
+        title="编辑这篇文章"
+      >
+        <Pencil className="w-4 h-4" />
+        <span>编辑</span>
+      </Link>
+      <Link
+        href="/admin/new"
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors transition-colors text-sm font-medium"
+        title="创建新文章"
+      >
+        <Plus className="w-4 h-4" />
+        <span>新文章</span>
+      </Link>
+    </div>
   )
 }

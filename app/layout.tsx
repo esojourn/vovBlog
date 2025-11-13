@@ -5,8 +5,6 @@ import { Github } from 'lucide-react'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { LogoImage } from '@/components/LogoImage'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { AdminLink } from '@/components/AdminLink'
-import { CreateButton } from '@/components/CreateButton'
 import { Analytics } from '@vercel/analytics/next'
 import { GoogleAnalytics } from '@/components/GoogleAnalytics'
 import { RouteChangeListener } from '@/components/RouteChangeListener'
@@ -98,8 +96,6 @@ export default function RootLayout({
                     </div>
                   </div>
                   <div className="flex-shrink-0 flex items-center gap-4">
-                    <CreateButton />
-                    <AdminLink />
                     <ThemeToggle />
                   </div>
                 </div>

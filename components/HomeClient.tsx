@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import PostCard from '@/components/PostCard'
 import SearchBar from '@/components/SearchBar'
+import { CreateButton } from '@/components/CreateButton'
+import { AdminLink } from '@/components/AdminLink'
 import { searchPosts } from '@/lib/search'
 import { Post } from '@/lib/posts'
 
@@ -90,6 +92,11 @@ export default function HomeClient({
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
+        {/* 创建和管理按钮 - 登录状态下显示 */}
+        <div className="flex gap-3 mb-4">
+          <CreateButton />
+          <AdminLink />
+        </div>
         {/* <h1 className="text-4xl font-bold mb-4">文章列表</h1> */}
         <SearchBar onSearch={setSearchQuery} />
       </div>
