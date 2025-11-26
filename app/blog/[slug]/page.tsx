@@ -16,6 +16,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const post = await getPostBySlug(slug)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
   if (!post) {
     return {
@@ -23,9 +24,32 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
   }
 
+  const postUrl = `${baseUrl}/blog/${slug}`
+  const description = post.description || post.title
+
   return {
     title: `${post.title} - VovBlog`,
-    description: post.description || post.title,
+    description,
+    keywords: post.tags?.join(', '),
+    authors: post.source ? [{ name: post.source }] : undefined,
+    openGraph: {
+      title: post.title,
+      description,
+      type: 'article',
+      url: postUrl,
+      siteName: '瓦器 WaQi.uk',
+      locale: 'zh_CN',
+      publishedTime: post.date,
+      authors: post.source ? [post.source] : undefined,
+      tags: post.tags,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description,
+      creator: post.source,
+    },
+    canonical: postUrl,
   }
 }
 
@@ -36,6 +60,7 @@ export default async function BlogPostPage({
 }) {
   const { slug } = await params
   const post = await getPostBySlug(slug)
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
   if (!post || !post.published) {
     notFound()
@@ -43,8 +68,37 @@ export default async function BlogPostPage({
 
   const readingTime = calculateReadingTime(post.content)
 
+  // JSON-LD 结构化数据
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.description || post.title,
+    author: post.source ? {
+      '@type': 'Organization',
+      name: post.source,
+    } : undefined,
+    datePublished: post.date,
+    dateModified: post.date,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/blog/${slug}`,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: '瓦器 WaQi.uk',
+      url: baseUrl,
+    },
+    inLanguage: 'zh-CN',
+    keywords: post.tags?.join(', '),
+  }
+
   return (
     <article className="max-w-4xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* 文章头部 */}
       <header className="mb-8">
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>

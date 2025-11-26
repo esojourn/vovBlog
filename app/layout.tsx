@@ -13,8 +13,35 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '瓦器 WaQi.uk',
-  description: '充满瑕疵的脆弱器皿',
+  title: '瓦器 WaQi.uk - 充满瑕疵的脆弱器皿',
+  description: '瓦器博客：分享信仰、思想和生活思考。包含来自瓦器微声、盐读书、五饼二鱼能量站等公众号的精选文章。',
+  keywords: ['博客', '信仰', '思想', '生活', '公众号文章', '精选'],
+  authors: [{ name: '瓦器' }],
+  creator: '瓦器',
+  robots: {
+    index: true,
+    follow: true,
+    'max-image-preview': 'large',
+    'max-snippet': -1,
+    'max-video-preview': -1,
+    googleBot: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'zh_CN',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.waqi.uk',
+    siteName: '瓦器 WaQi.uk',
+    title: '瓦器 WaQi.uk',
+    description: '瓦器博客：分享信仰、思想和生活思考。包含来自瓦器微声、盐读书、五饼二鱼能量站等公众号的精选文章。',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '瓦器 WaQi.uk',
+    description: '瓦器博客：分享信仰、思想和生活思考',
+  },
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.waqi.uk',
+  },
   icons: {
     icon: [
       {
@@ -46,8 +73,60 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.waqi.uk'
+
+  // Organization JSON-LD Schema
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: '瓦器 WaQi.uk',
+    description: '充满瑕疵的脆弱器皿',
+    url: baseUrl,
+    logo: `${baseUrl}/images/logo.png`,
+    sameAs: [
+      'https://github.com/esojourn/vovBlog',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      url: baseUrl,
+      contactType: 'Customer Service',
+    },
+  }
+
+  // WebSite JSON-LD Schema with SearchAction
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: '瓦器 WaQi.uk',
+    url: baseUrl,
+    description: '瓦器博客：分享信仰、思想和生活思考。',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${baseUrl}/?search={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  }
+
   return (
     <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        {/* JSON-LD Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        {/* RSS Feed Discovery */}
+        <link rel="alternate" type="application/rss+xml" title="瓦器博客 RSS Feed" href={`${baseUrl}/feed.xml`} />
+        {/* Sitemap */}
+        <link rel="sitemap" type="application/xml" href={`${baseUrl}/sitemap.xml`} />
+      </head>
       <body className={inter.className}>
         <ThemeProvider>
           <RouteChangeListener />
