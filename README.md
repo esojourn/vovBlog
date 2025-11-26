@@ -29,6 +29,12 @@
 - 🏷️ **标签和分类系统**：灵活的内容组织方式
 - 📱 **响应式设计**：在任何设备上都有良好的阅读体验
 - ⚡ **极速部署**：零配置部署到 Vercel
+- 🔍 **SEO 优化**（v1.3.0 新增）：增强搜索引擎索引能力
+  - 增强 sitemap.xml：支持 Google News 扩展，搜索引擎可直接看到中文标题
+  - RSS Feed 订阅：完整的文章 feed，支持 RSS 阅读器订阅 (`/feed.xml`)
+  - HTML 站点地图：用户友好的文章列表页面 (`/sitemap-page`)
+  - JSON-LD 结构化数据：帮助搜索引擎理解文章内容，提升 Rich Snippets 显示
+  - Open Graph 和 Twitter Card：优化社交媒体分享显示
 
 ## 🚀 本地部署 
 文章发布需要本地部署。在本地发布后，文章保存为.mdx文件。git push到github后，自动同步vercel。这样设计的原因是：
@@ -163,6 +169,48 @@ bun run deploy
 6. 支持拖拽上传图片
 7. 从其他网页复制内容时，自动保留格式
 
+## 📋 版本更新 (v1.3.0)
+
+### 🎉 新增功能
+
+1. **增强 SEO 优化** ⭐ 搜索引擎友好
+   - **增强 sitemap.xml**：
+     - 添加 Google News 扩展（`<news:title>`），搜索引擎可直接看到中文标题
+     - 添加 Image 扩展，支持文章图片索引
+     - 即使 URL 使用拼音，搜索引擎也能正确理解中文内容
+
+   - **RSS Feed** (`/feed.xml`)：
+     - 支持 RSS 2.0 标准
+     - 包含所有文章的完整信息（标题、描述、分类、标签）
+     - 搜索引擎可订阅以发现新文章
+     - 用户可使用 RSS 阅读器订阅
+
+   - **HTML 站点地图** (`/sitemap-page`)：
+     - 用户友好的文章列表页面
+     - 按分类组织展示所有文章
+     - 为爬虫提供额外的索引入口
+
+   - **结构化数据**：
+     - Article JSON-LD Schema：帮助搜索引擎理解文章结构
+     - Organization JSON-LD Schema：标识网站身份
+     - WebSite JSON-LD Schema：支持搜索框识别
+
+   - **完善元数据**：
+     - Open Graph 标签：优化 Facebook、LinkedIn 等社交媒体分享
+     - Twitter Card 标签：优化 Twitter 分享显示
+     - Keywords、Robots、Canonical URL 等 SEO 标签
+     - HTML `<link>` 声明：自动发现 RSS Feed 和 Sitemap
+
+2. **SEO 效果**：
+   - ✅ 搜索引擎可直接看到中文标题（通过 sitemap News 扩展的 `<news:title>`）
+   - ✅ 支持 RSS 订阅，爬虫可发现新文章
+   - ✅ HTML Sitemap 为爬虫提供额外索引入口
+   - ✅ JSON-LD Schema 提升搜索结果显示质量（Rich Snippets）
+   - ✅ 社交媒体分享显示优化（Open Graph）
+   - ✅ URL 保持拼音形式，搜索引擎仍能理解中文内容
+
+---
+
 ## 📋 版本更新 (v1.2.0)
 
 ### 🎉 新增功能
@@ -207,12 +255,16 @@ VovBlog/
 │   ├── admin/             # 管理后台
 │   │   ├── new/           # 创建文章
 │   │   └── edit/[slug]/   # 编辑文章
-│   ├── blog/[slug]/       # 文章详情页
+│   ├── blog/[slug]/       # 文章详情页（含 JSON-LD Schema）
 │   ├── api/               # API 路由
 │   │   ├── posts/         # 文章 CRUD 操作
 │   │   ├── upload/        # 图片上传到 Cloudinary
 │   │   ├── proxy-upload/  # 代理上传（绕过 CORS）
 │   │   └── fetch-wechat-article/ # ⭐ 微信公众号导入
+│   ├── sitemap.xml/       # 🆕 增强 sitemap（Google News 扩展）
+│   ├── feed.xml/          # 🆕 RSS Feed
+│   ├── sitemap-page/      # 🆕 HTML 站点地图
+│   ├── layout.tsx         # 根布局（含 JSON-LD Schema）
 │   └── page.tsx           # 首页
 ├── components/            # React 组件
 │   ├── TipTapEditor.tsx  # 编辑器组件（支持导入内容）
@@ -271,6 +323,97 @@ A: 目前仅支持微信公众号 (mp.weixin.qq.com)。未来可根据需求添�
 
 部署完成后，您的博客将在 `https://your-project.vercel.app` 上线。
 使用自己的域名，指向vercel项目，即可墙内访问。
+
+## 🔍 SEO 功能说明
+
+### Sitemap.xml
+访问 `/sitemap.xml` 查看增强的站点地图，包含：
+- **Google News 扩展**：每篇文章的中文标题直接在 XML 中显示（`<news:title>`）
+- **Image 扩展**：文章图片信息
+- **完整文章列表**：所有发布的文章都包含在 sitemap 中
+
+搜索引擎通过 sitemap.xml 可以：
+- 发现所有文章，即使 URL 使用拼音形式
+- 识别文章的中文标题（通过 `<news:title>` 标签）
+- 了解文章的更新时间和优先级
+
+### RSS Feed
+访问 `/feed.xml` 获取 RSS 订阅源，支持：
+- **RSS 阅读器**：在 Feedly、Inoreader 等 RSS 阅读器中订阅
+- **搜索引擎自动发现**：爬虫可订阅以发现新文章
+- **完整文章信息**：包含标题、描述、分类、标签等
+- **标准 RSS 2.0 格式**：兼容所有标准 RSS 阅读器
+
+### HTML 站点地图
+访问 `/sitemap-page` 查看用户友好的文章列表：
+- **分类展示**：所有文章按分类组织
+- **发布日期**：每篇文章显示发布日期
+- **统计信息**：显示总文章数、分类数、最新更新时间
+- **便于浏览**：用户可以通过站点地图浏览所有文章
+- **爬虫索引**：为搜索引擎提供额外的索引入口
+
+### 结构化数据（JSON-LD）
+所有页面自动包含 JSON-LD 结构化数据：
+
+**文章页面** (`/blog/[slug]`)：
+- `Article` Schema：标题、作者、发布日期、描述等
+- 帮助搜索引擎理解文章结构
+- 使用 `<script type="application/ld+json">` 标签
+
+**首页和所有页面**：
+- `Organization` Schema：标识网站身份
+- `WebSite` Schema：支持搜索框识别
+- 提升搜索结果中的富文本片段（Rich Snippets）显示
+
+### 社交媒体分享优化
+所有页面都配置了社交媒体标签：
+
+**Open Graph 标签**：
+- 优化 Facebook、LinkedIn、Pinterest 等社交媒体分享效果
+- 显示标题、描述、图片等信息
+
+**Twitter Card 标签**：
+- 优化 Twitter 分享显示
+- 支持 summary_large_image 格式
+
+### SEO 元数据
+所有页面都包含完整的 SEO 元数据：
+- `<title>`：网页标题（包含关键词）
+- `<meta name="description">`：页面描述
+- `<meta name="keywords">`：关键词
+- `<meta name="robots">`：爬虫指令
+- `<link rel="canonical">`：规范化 URL
+- `<link rel="alternate" type="application/rss+xml">`：自动发现 RSS Feed
+
+### SEO 验证清单
+
+部署后，建议进行以下验证以确保 SEO 优化有效：
+
+1. **Google Search Console**：
+   - 提交 `https://www.waqi.uk/sitemap.xml`
+   - 检查"覆盖范围"中是否包含所有文章
+   - 检查"增强内容"中的"文章"部分
+
+2. **结构化数据测试**：
+   - 使用 [Google Rich Results Test](https://search.google.com/test/rich-results)
+   - 输入文章页面 URL，验证 Article Schema 是否正确识别
+
+3. **Open Graph 测试**：
+   - 使用 [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
+   - 输入文章 URL，查看社交媒体分享预览
+
+4. **RSS Feed 验证**：
+   - 访问 `https://www.waqi.uk/feed.xml`
+   - 在 [W3C Feed Validator](https://validator.w3.org/feed/) 验证格式
+   - 在 RSS 阅读器（如 Feedly）中测试订阅
+
+5. **Sitemap 验证**：
+   - 访问 `https://www.waqi.uk/sitemap.xml` 查看 XML 格式
+   - 检查是否包含所有文章的中文标题（`<news:title>` 标签）
+
+6. **移动设备友好性**：
+   - 使用 [Google Mobile-Friendly Test](https://search.google.com/test/mobile-friendly)
+   - 确保网站在移动设备上的显示效果
 
 ## 🔧 环境变量说明
 
