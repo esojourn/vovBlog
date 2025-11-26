@@ -1,0 +1,40 @@
+[Unit]
+Description=VovBlog - Next.js Blog Platform
+Documentation=https://github.com/yourusername/VovBlog
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/home/your-user/VovBlog
+
+# 使用 Bun 或 Node 运行服务
+ExecStart=/usr/local/bin/bun run start
+# 如果没有安装 Bun，可以使用 Node:
+# ExecStart=/usr/bin/node /home/your-user/VovBlog/server.js
+
+# 环境变量
+Environment="NODE_ENV=production"
+EnvironmentFile=/home/your-user/VovBlog/.env.production
+
+# 自动重启配置
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=1min
+StartLimitBurst=5
+
+# 性能配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vovblog
+
+# 超时配置
+TimeoutStartSec=60
+TimeoutStopSec=20
+
+# 内存和进程限制（可选）
+# MemoryLimit=1G
+# LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
