@@ -80,6 +80,11 @@ bun install
 ```bash
 # WSL/Ubuntu 需要安装额外的依赖库
 bunx playwright install-deps chromium
+bunx playwright install-deps
+bunx playwright install
+
+# 因版本问题，无法找到playwright时：
+ ./node_modules/.bin/playwright install --with-deps chromium
 ```
 
 **注意：** 本项目使用 Bun 作为包管理器，比 npm 快 6-10 倍。如果未安装 Bun，可以使用 npm 或 yarn 替代：
