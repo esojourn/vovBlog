@@ -154,6 +154,57 @@ bun run deploy
 - ⚡ **自动同步**：保存后自动推送到 GitHub，触发 Vercel 部署
 - 🌐 **动态 IP 友好**：无需配置 DDNS 或端口转发
 
+### 工作原理与安全说明
+
+#### Cloudflare Tunnel 工作流程
+
+```
+外部用户                 Cloudflare Edge          你的本地电脑
+   ↓                          ↓                       ↓
+访问 https://admin.domain/admin
+   ↓                          ↓
+   └──────→ (HTTPS 443) ─────→ Cloudflare 边缘服务器
+                              ↓ (加密隧道)
+                        Cloudflare Tunnel 协议
+                        (QUIC/HTTP2，动态端口)
+                              ↓
+                        本地 cloudflared 客户端
+                        (出站连接，无需开放端口)
+                              ↓
+                         http://localhost:3000
+                              ↓
+                         Next.js 开发服务器
+```
+
+#### 关键特性
+
+**1. 无需开放公网端口**
+- 本地电脑不监听任何公网端口
+- 不需要配置路由器端口转发
+- cloudflared 主动连接到 Cloudflare（出站连接）
+
+**2. 443 端口位置**
+- HTTPS 443 端口**仅在 Cloudflare Edge 服务器**（美国）
+- 本地服务运行在 `localhost:3000`（内网）
+- 两者通过加密 Tunnel 连接
+
+**3. 法律合规性** ✅
+- ✅ 完全合法，无需 ICP 备案
+- ✅ 出站连接符合家庭宽带使用规范
+- ✅ 不违反任何中国法律法规
+- ✅ 真正的 Web 服务运行在 Cloudflare 海外服务器
+
+#### 与传统端口转发的对比
+
+| 特性 | Cloudflare Tunnel | 传统端口转发 |
+|-----|------------------|------------|
+| 本地开放端口 | ❌ 不需要 | ✅ 需要开放 443 |
+| 路由器配置 | ❌ 不需要 | ✅ 需要端口转发 |
+| 公网 IP 要求 | ❌ 不需要 | ✅ 需要固定/动态IP |
+| 法律风险 | ✅ 无风险 | ⚠️ 可能需要备案 |
+| 安全性 | ✅ 高（双重认证） | ⚠️ 需自行加固 |
+| 动态 IP 友好 | ✅ 完全支持 | ❌ 需配置 DDNS |
+
 ### 前提条件
 
 - ✅ 已完成上述"本地部署"步骤
@@ -204,7 +255,7 @@ tunnel: <粘贴上步获得的 TUNNEL_ID>
 credentials-file: ~/.cloudflared/<TUNNEL_ID>.json
 
 ingress:
-  - hostname: pub.waqi.uk  # 修改为你的子域名
+  - hostname: admin.domain  # 修改为你的子域名
     service: http://localhost:3000
   - service: http_status:404
 ```
@@ -213,7 +264,7 @@ ingress:
 
 ```bash
 # 自动创建 CNAME 记录
-cloudflared tunnel route dns vovblog-publisher pub.waqi.uk
+cloudflared tunnel route dns vovblog-publisher admin.domain
 ```
 
 #### 6. 配置 Cloudflare Access (推荐)
@@ -222,7 +273,7 @@ cloudflared tunnel route dns vovblog-publisher pub.waqi.uk
 
 1. **创建 Access Application**
    - Application name: `VovBlog Publisher`
-   - Application domain: `pub.waqi.uk`
+   - Application domain: `admin.domain`
    - Path: `/admin/*`
 
 2. **创建 Access Policy**
@@ -251,7 +302,7 @@ cloudflared tunnel route dns vovblog-publisher pub.waqi.uk
 
 #### 8. 访问远程发布界面
 
-1. 手机浏览器访问 `https://pub.waqi.uk/admin`
+1. 手机浏览器访问 `https://admin.domain/admin`
 2. 通过 Cloudflare Access 验证（首次或会话过期时）
 3. 输入 admin 密码登录
 4. 使用完整的发布界面创建/编辑文章
@@ -270,7 +321,7 @@ cloudflared tunnel route dns vovblog-publisher pub.waqi.uk
 
 ### 故障排查
 
-**Q: 无法访问 pub.waqi.uk？**
+**Q: 无法访问 admin.domain？**
 - 检查 Tunnel 是否正在运行：`cloudflared tunnel info vovblog-publisher`
 - 检查 DNS 记录是否生效（可能需要 5-10 分钟）
 - 确认本地开发服务器正在运行（localhost:3000）
@@ -325,7 +376,7 @@ cloudflared tunnel route dns vovblog-publisher pub.waqi.uk
 
 1. **📱 远程发布支持** ⭐ 核心功能
    - 通过 Cloudflare Tunnel 实现手机远程发布文章
-   - 访问 `pub.waqi.uk/admin` 即可在任何设备上发布
+   - 访问 `admin.domain/admin` 即可在任何设备上发布
    - 双重认证机制：Cloudflare Access + 应用密码
    - 零端口转发配置，安全便捷
 
