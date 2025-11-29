@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isPublisherMode } from '@/lib/publisher-mode'
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -38,6 +39,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // 发布模式下的访问控制
+  const publisherMode = isPublisherMode()
+
+  if (publisherMode) {
+    const isBlogPostPage = pathname.startsWith('/blog/')
+
+    // 文章详情页：未登录时重定向到 /unauthorized
+    if (isBlogPostPage && !isAuthenticated) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
+  }
+
   return NextResponse.next()
 }
 
@@ -47,5 +60,7 @@ export const config = {
     '/admin/:path*',
     '/api/posts/:path*',
     '/api/upload/:path*',
+    '/',
+    '/blog/:path*',
   ],
 }

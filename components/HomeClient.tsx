@@ -14,6 +14,8 @@ interface HomeClientProps {
   allCategories: string[]
   allSources: string[]
   currentSubdomain?: string | null
+  publisherMode: boolean
+  isAuthenticated: boolean
 }
 
 const POSTS_PER_PAGE = 20
@@ -24,7 +26,16 @@ export default function HomeClient({
   allCategories,
   allSources,
   currentSubdomain,
+  publisherMode,
+  isAuthenticated,
 }: HomeClientProps) {
+  // 发布模式受限内容显示
+  if (publisherMode && !isAuthenticated) {
+    // 返回 null，不显示任何内容
+    // 页面布局中的 header 会自动显示，页脚会被 layout 隐藏
+    return null
+  }
+
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
