@@ -29,6 +29,9 @@
 - 🏷️ **标签和分类系统**：灵活的内容组织方式
 - 📱 **响应式设计**：在任何设备上都有良好的阅读体验
 - ⚡ **极速部署**：零配置部署到 Vercel
+- 📱 **远程发布**（v1.4.0 新增）：通过 Cloudflare Tunnel 在手机上发布文章
+- 🔒 **登录限流**（v1.4.0 新增）：防止暴力破解，15 分钟最多 5 次尝试
+- 🚀 **Git 自动同步**（v1.4.0 新增）：保存后自动推送到 GitHub，触发 Vercel 部署
 - 🔍 **SEO 优化**（v1.3.0 新增）：增强搜索引擎索引能力
   - 增强 sitemap.xml：支持 Google News 扩展，搜索引擎可直接看到中文标题
   - RSS Feed 订阅：完整的文章 feed，支持 RSS 阅读器订阅 (`/feed.xml`)
@@ -140,6 +143,148 @@ bun run deploy
 
 详细部署指南请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
+## 📱 远程发布配置 (可选)
+
+如果你希望在手机或其他设备上远程发布文章，可以配置 Cloudflare Tunnel。
+
+### 为什么需要远程发布？
+
+- 📱 **手机发布**：随时随地发布文章，不受地点限制
+- 🔒 **安全访问**：双重认证保护，无需暴露端口
+- ⚡ **自动同步**：保存后自动推送到 GitHub，触发 Vercel 部署
+- 🌐 **动态 IP 友好**：无需配置 DDNS 或端口转发
+
+### 前提条件
+
+- ✅ 已完成上述"本地部署"步骤
+- ✅ 拥有 Cloudflare 账号（免费）
+- ✅ 域名已托管在 Cloudflare（或可添加子域名）
+- ✅ 本地电脑保持开机运行
+
+### 配置步骤
+
+#### 1. 安装 cloudflared
+
+**macOS:**
+```bash
+brew install cloudflare/cloudflare/cloudflared
+```
+
+**Windows:**
+```bash
+winget install Cloudflare.cloudflared
+```
+
+**Linux:**
+访问 [官方安装指南](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/)
+
+#### 2. 登录 Cloudflare
+
+```bash
+cloudflared tunnel login
+```
+
+浏览器会打开，选择你的域名（如 `waqi.uk`）并授权。
+
+#### 3. 创建 Tunnel
+
+```bash
+# 创建名为 vovblog-publisher 的隧道
+cloudflared tunnel create vovblog-publisher
+
+# 记录输出的 Tunnel ID（后续需要）
+```
+
+#### 4. 配置 Tunnel
+
+创建或编辑 `~/.cloudflared/config.yml`：
+
+```yaml
+tunnel: <粘贴上步获得的 TUNNEL_ID>
+credentials-file: ~/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: pub.waqi.uk  # 修改为你的子域名
+    service: http://localhost:3000
+  - service: http_status:404
+```
+
+#### 5. 配置 DNS
+
+```bash
+# 自动创建 CNAME 记录
+cloudflared tunnel route dns vovblog-publisher pub.waqi.uk
+```
+
+#### 6. 配置 Cloudflare Access (推荐)
+
+访问 [Cloudflare Zero Trust Dashboard](https://one.dash.cloudflare.com)：
+
+1. **创建 Access Application**
+   - Application name: `VovBlog Publisher`
+   - Application domain: `pub.waqi.uk`
+   - Path: `/admin/*`
+
+2. **创建 Access Policy**
+   - Policy name: `Admin Only`
+   - Action: `Allow`
+   - Include rules (选择以下之一):
+     - **Email**: 你的邮箱（推荐）
+     - **One-time PIN**: 每次访问发送验证码
+     - **IP Range**: 你的常用 IP 段
+
+3. **Session Duration**: 设置为 24 小时
+
+#### 7. 启动发布服务
+
+**Linux/Mac:**
+```bash
+./scripts/start-publisher.sh
+```
+
+**Windows:**
+```bash
+.\scripts\start-publisher.bat
+```
+
+或双击运行 `start-publisher.bat` 文件。
+
+#### 8. 访问远程发布界面
+
+1. 手机浏览器访问 `https://pub.waqi.uk/admin`
+2. 通过 Cloudflare Access 验证（首次或会话过期时）
+3. 输入 admin 密码登录
+4. 使用完整的发布界面创建/编辑文章
+5. 保存后自动推送到 GitHub → Vercel 自动部署
+
+### 安全说明
+
+远程发布采用双重认证机制：
+
+1. **第一层**：Cloudflare Access（邮箱/PIN 验证）
+2. **第二层**：应用密码登录（带限流保护）
+   - 15 分钟内最多 5 次登录尝试
+   - 超限后需等待冷却时间
+
+建议设置强密码（至少 16 位，包含大小写、数字、特殊字符）。
+
+### 故障排查
+
+**Q: 无法访问 pub.waqi.uk？**
+- 检查 Tunnel 是否正在运行：`cloudflared tunnel info vovblog-publisher`
+- 检查 DNS 记录是否生效（可能需要 5-10 分钟）
+- 确认本地开发服务器正在运行（localhost:3000）
+
+**Q: Cloudflare Access 无法验证？**
+- 检查 Access Application 配置是否正确
+- 确认邮箱地址与 Cloudflare 账户一致
+- 检查垃圾邮件文件夹（如果使用 PIN 验证）
+
+**Q: Git 自动同步失败？**
+- 检查 Git 凭证是否正确配置
+- 查看服务器日志：`[GitSync]` 开头的日志信息
+- 手动测试：`git push` 是否正常工作
+
 ### 7. 创建文章
 
 #### 方法一：一键导入微信公众号文章 ⭐ 推荐
@@ -173,6 +318,35 @@ bun run deploy
 5. 直接粘贴图片到编辑器，自动上传
 6. 支持拖拽上传图片
 7. 从其他网页复制内容时，自动保留格式
+
+## 📋 版本更新 (v1.4.0)
+
+### 🎉 新增功能
+
+1. **📱 远程发布支持** ⭐ 核心功能
+   - 通过 Cloudflare Tunnel 实现手机远程发布文章
+   - 访问 `pub.waqi.uk/admin` 即可在任何设备上发布
+   - 双重认证机制：Cloudflare Access + 应用密码
+   - 零端口转发配置，安全便捷
+
+2. **🔒 登录限流保护**
+   - 防止暴力破解攻击
+   - 15 分钟内最多 5 次登录尝试
+   - 超限后显示倒计时提示
+   - 支持 Cloudflare 真实 IP 识别
+
+3. **🚀 Git 自动同步**
+   - 文章保存后自动推送到 GitHub
+   - 后台异步处理，不阻塞请求
+   - 自动触发 Vercel 部署
+   - 无需手动 git push
+
+4. **🛠️ 便捷启动脚本**
+   - 一键启动开发服务器和 Tunnel
+   - 支持 Linux/Mac/Windows 平台
+   - 自动检查依赖和环境配置
+
+---
 
 ## 📋 版本更新 (v1.3.0)
 
@@ -428,7 +602,7 @@ A: 目前仅支持微信公众号 (mp.weixin.qq.com)。未来可根据需求添�
 | `CLOUDINARY_API_KEY` | Cloudinary API Key | 是 |
 | `CLOUDINARY_API_SECRET` | Cloudinary API Secret | 是 |
 | `NEXT_PUBLIC_SITE_URL` | 网站 URL（用于 SEO） | 否 |
-| `ADMIN_PASSWORD` | 管理员密码 | 是 |
+| `ADMIN_PASSWORD` | 管理员密码（建议 16 位以上，包含大小写、数字、特殊符号） | 是 |
 
 ## 📄 许可证
 

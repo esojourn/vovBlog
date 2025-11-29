@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function AdminLogin() {
@@ -8,9 +8,31 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [retryAfter, setRetryAfter] = useState(0)  // 限流倒计时
+
+  // 倒计时效果
+  useEffect(() => {
+    if (retryAfter <= 0) return
+
+    const timer = setInterval(() => {
+      setRetryAfter((prev) => {
+        if (prev <= 1) {
+          setError('')
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [retryAfter])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    // 如果正在限流中，不允许提交
+    if (retryAfter > 0) return
+
     setError('')
     setLoading(true)
 
@@ -26,7 +48,13 @@ export default function AdminLogin() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || '登录失败，请重试')
+        // 处理 429 限流错误
+        if (response.status === 429 && data.retryAfter) {
+          setRetryAfter(data.retryAfter)
+          setError(`登录尝试次数过多，请等待 ${data.retryAfter} 秒后重试`)
+        } else {
+          setError(data.error || '登录失败，请重试')
+        }
         setLoading(false)
         return
       }
@@ -38,6 +66,16 @@ export default function AdminLogin() {
       setError('网络错误，请重试')
       setLoading(false)
     }
+  }
+
+  // 格式化剩余时间
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    if (mins > 0) {
+      return `${mins} 分 ${secs} 秒`
+    }
+    return `${secs} 秒`
   }
 
   return (
@@ -72,17 +110,31 @@ export default function AdminLogin() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                {error}
+              <div className={`p-3 border rounded-lg text-sm ${
+                retryAfter > 0
+                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  : 'bg-red-50 border-red-200 text-red-700'
+              }`}>
+                {retryAfter > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>请等待 {formatTime(retryAfter)} 后重试</span>
+                  </div>
+                ) : (
+                  error
+                )}
               </div>
             )}
 
             <button
               type="submit"
-              disabled={loading || !password.trim()}
+              disabled={loading || !password.trim() || retryAfter > 0}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
             >
-              {loading ? '登录中...' : '登 录'}
+              {loading ? '登录中...' : retryAfter > 0 ? `请等待 ${formatTime(retryAfter)}` : '登 录'}
             </button>
           </form>
 

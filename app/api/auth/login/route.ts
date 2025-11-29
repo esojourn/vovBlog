@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  checkRateLimit,
+  recordAttempt,
+  resetRateLimit,
+  getClientIp,
+} from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    // 获取客户端 IP
+    const clientIp = getClientIp(request, request.headers)
+
+    // 检查限流
+    const rateLimitResult = checkRateLimit(clientIp)
+    if (!rateLimitResult.allowed) {
+      console.log(`[Login] 限流拦截 IP: ${clientIp}, 剩余 ${rateLimitResult.retryAfter} 秒`)
+      const response = NextResponse.json(
+        { error: '登录尝试次数过多，请稍后再试', retryAfter: rateLimitResult.retryAfter },
+        { status: 429 }
+      )
+      response.headers.set('Retry-After', String(rateLimitResult.retryAfter))
+      return response
+    }
+
     const { password } = await request.json()
 
     if (!password) {
@@ -22,11 +43,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (password !== adminPassword) {
+      // 记录失败尝试
+      recordAttempt(clientIp)
+      console.log(`[Login] 密码错误 IP: ${clientIp}`)
       return NextResponse.json(
         { error: '密码错误' },
         { status: 401 }
       )
     }
+
+    // 登录成功，重置限流计数器
+    resetRateLimit(clientIp)
+    console.log(`[Login] 登录成功 IP: ${clientIp}`)
 
     // 创建session token（简单的时间戳+随机字符串）
     const sessionToken = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`

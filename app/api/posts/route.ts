@@ -7,6 +7,7 @@ import {
 } from '@/lib/posts'
 import { slugify } from '@/lib/utils'
 import { getDefaultSource } from '@/lib/source-config'
+import { syncToGithubAsync } from '@/lib/git-sync'
 
 export async function GET(request: Request) {
   try {
@@ -52,6 +53,9 @@ export async function POST(request: Request) {
       originalUrl: data.originalUrl || '',
     })
 
+    // 触发后台 Git 同步（不阻塞请求）
+    syncToGithubAsync(slug, 'create')
+
     return NextResponse.json({ slug, success: true })
   } catch (error) {
     console.error('保存文章失败:', error)
@@ -86,6 +90,9 @@ export async function PUT(request: Request) {
       originalUrl: data.originalUrl || '',
     })
 
+    // 触发后台 Git 同步（不阻塞请求）
+    syncToGithubAsync(slug, 'update')
+
     return NextResponse.json({ slug, success: true })
   } catch (error) {
     console.error('更新文章失败:', error)
@@ -109,6 +116,10 @@ export async function DELETE(request: Request) {
     }
 
     await deletePost(slug)
+
+    // 触发后台 Git 同步（不阻塞请求）
+    syncToGithubAsync(slug, 'delete')
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('删除文章失败:', error)
