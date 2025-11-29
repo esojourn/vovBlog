@@ -71,7 +71,7 @@ echo ""
 echo "========================================="
 echo "2️⃣  启动 Cloudflare Tunnel..."
 echo "========================================="
-echo "访问: https://pub.waqi.uk/admin"
+echo "访问: https://admin.domain/admin"
 echo ""
 
 cloudflared tunnel run vovblog-publisher &

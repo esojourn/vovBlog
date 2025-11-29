@@ -25,7 +25,9 @@
       "Bash(bun run dev)",
       "Bash(bunx tsc:*)",
       "Bash(node -e:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(cat:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
