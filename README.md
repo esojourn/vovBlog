@@ -42,7 +42,8 @@
 ## 🚀 本地部署 
 文章发布需要本地部署。在本地发布后，文章保存为.mdx文件。git push到github后，自动同步vercel。这样设计的原因是：
 1. 不需要数据库支持，避免依赖付费服务。
-2. 微信公众号阻挡爬虫抓取，但支持本地浏览。程序使用本地无头浏览器访问，不会触发反爬虫检测。
+2. 网络：如本地使用家庭网络环境，对比服务器机房环境，天然对浏览公众号友好。
+3. 浏览器：程序使用本地无头浏览器访问，模拟人工浏览环境。
 
 进行以下步骤时，先确认上面“快速开始”中，线上vercel环境已经完成部署。
 
@@ -83,19 +84,16 @@ bun install
 首次使用时需要安装系统依赖库：
 
 ```bash
-# 安装 Chromium 所需的系统库（仅需运行一次）
+# 安装 Chromium 所需的系统库
 bunx playwright install-deps chromium
 ```
 
 **说明：**
 - Playwright 浏览器会在 `bun install` 时自动下载
 - 上述命令仅用于安装操作系统级别的依赖库（如 libatk、libnss3 等）
-- Windows/macOS 用户通常不需要此步骤
+- 建议使用linux或wsl环境
 
-**注意：** 本项目使用 Bun 作为包管理器，比 npm 快 6-10 倍。如果未安装 Bun，可以使用 npm 或 yarn 替代：
-```bash
-npm install  # 或 yarn install
-```
+
 
 ### 4. 配置环境变量
 
@@ -113,6 +111,11 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
 ADMIN_PASSWORD=password
+
+NEXT_PUBLIC_SITE_URL=http://YourDomain.com
+NEXT_PUBLIC_GA_ID=G-xxxx
+
+PUBLISHER_MODE=true
 ```
 
 ### 5. 启动开发服务器
