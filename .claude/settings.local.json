@@ -27,7 +27,9 @@
       "Bash(node -e:*)",
       "Bash(test:*)",
       "Bash(cat:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(bunx playwright:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

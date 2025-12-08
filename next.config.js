@@ -7,8 +7,10 @@ const nextConfig = {
         hostname: 'res.cloudinary.com',
       },
     ],
-    // 支持更高质量的图像输出
-    qualities: [75, 90],
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 768, 1024, 1280, 1920],
+    imageSizes: [256, 320, 384, 512],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days cache
   },
   turbopack: {
     root: '.',
