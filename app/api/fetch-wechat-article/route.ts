@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { chromium } from 'playwright-core'
+import { chromium } from 'playwright'
 import TurndownService from 'turndown'
 
 interface FetchResult {

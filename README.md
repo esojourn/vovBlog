@@ -78,17 +78,19 @@ bun --version
 bun install
 ```
 
-**如果在 WSL 中使用 Playwright（用于微信文章导入）：**
+**WSL/Linux 用户额外步骤（用于微信文章导入）：**
+
+首次使用时需要安装系统依赖库：
 
 ```bash
-# WSL/Ubuntu 需要安装额外的依赖库
+# 安装 Chromium 所需的系统库（仅需运行一次）
 bunx playwright install-deps chromium
-bunx playwright install-deps
-bunx playwright install
-
-# 因版本问题，无法找到playwright时：
- ./node_modules/.bin/playwright install --with-deps chromium
 ```
+
+**说明：**
+- Playwright 浏览器会在 `bun install` 时自动下载
+- 上述命令仅用于安装操作系统级别的依赖库（如 libatk、libnss3 等）
+- Windows/macOS 用户通常不需要此步骤
 
 **注意：** 本项目使用 Bun 作为包管理器，比 npm 快 6-10 倍。如果未安装 Bun，可以使用 npm 或 yarn 替代：
 ```bash
