@@ -36,9 +36,6 @@ export async function GET() {
     xml += '      </news:publication>\n'
     xml += `      <news:publication_date>${post.date}</news:publication_date>\n`
     xml += `      <news:title>${escapeXml(post.title)}</news:title>\n`
-    if (post.source) {
-      xml += `      <news:keywords>${escapeXml(post.source)}</news:keywords>\n`
-    }
     xml += '    </news:news>\n'
 
     // 添加 Image 扩展（如果有分类或标签作为图片说明）

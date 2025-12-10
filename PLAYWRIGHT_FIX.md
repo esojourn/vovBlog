@@ -58,15 +58,6 @@ import { chromium } from 'playwright'
 
 #### 3. README 简化
 
-**原有复杂说明（4 个命令）：**
-```bash
-bunx playwright install-deps chromium
-bunx playwright install-deps
-bunx playwright install
-./node_modules/.bin/playwright install --with-deps chromium
-```
-
-**简化后（1 个命令）：**
 ```bash
 # WSL/Linux 用户仅需运行一次
 bunx playwright install-deps chromium
