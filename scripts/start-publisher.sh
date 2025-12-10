@@ -31,6 +31,25 @@ if [ ! -d "node_modules" ]; then
   echo ""
 fi
 
+# 检查生产构建是否存在
+if [ ! -d ".next" ]; then
+  echo "⚠️  生产构建不存在，正在构建..."
+  bun run build
+  echo ""
+else
+  # 提示用户是否重新构建
+  echo "🔍 生产构建已存在"
+  echo "按 'r' 重新构建，或按任意其他键继续..."
+  read -t 5 -n 1 rebuild_choice || true
+  echo ""
+
+  if [ "$rebuild_choice" = "r" ]; then
+    echo "🔨 正在重新构建生产包..."
+    bun run build
+    echo ""
+  fi
+fi
+
 # 检查 cloudflared 是否已安装
 if ! command -v cloudflared &> /dev/null; then
   echo "错误: 未找到 cloudflared，请先安装:"
@@ -52,15 +71,15 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-# 启动 Next.js 开发服务器
+# 启动 Next.js 生产服务器
 echo ""
 echo "========================================="
-echo "1️⃣  启动 Next.js 开发服务器..."
+echo "1️⃣  启动 Next.js 生产服务器..."
 echo "========================================="
 echo "访问: http://localhost:3000"
 echo ""
 
-bun run dev &
+bun start &
 DEV_PID=$!
 
 # 等待开发服务器启动

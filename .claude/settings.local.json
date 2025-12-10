@@ -30,7 +30,8 @@
       "Bash(git commit:*)",
       "Bash(bunx playwright:*)",
       "Bash(find:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
