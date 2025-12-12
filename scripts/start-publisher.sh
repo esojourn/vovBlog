@@ -1,12 +1,37 @@
 #!/bin/bash
 # VovBlog Publisher 启动脚本（Linux/Mac）
 # 启动 Next.js 开发服务器和 Cloudflare Tunnel
+# wsl内自动启动，可以在 开始 》程序 》启动内创建快捷方式：
+# C:\Windows\System32\wsl.exe -d <LINUX> -u <USER> -- bash -l -c "/<PATH>/vovBlog/scripts/start-publisher.sh"
 
 set -e
 
 # 获取脚本所在目录的父目录（项目根目录）
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( dirname "$SCRIPT_DIR" )"
+
+# 1. 定义用户主目录 (防止 $HOME 变量在某些极端环境下丢失)
+USER_HOME=$(eval echo ~$USER)
+
+# --- 兼容性加载 NVM (Node.js) ---
+# 大多数 Node 环境是用 NVM 管理的，我们需要手动加载 NVM 脚本
+export NVM_DIR="$USER_HOME/.nvm"
+# 如果 nvm.sh 存在，就加载它
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+
+# --- 兼容性加载 Bun ---
+# 如果 .bun 目录存在，将其 bin 加入 PATH
+if [ -d "$USER_HOME/.bun/bin" ]; then
+    export BUN_INSTALL="$USER_HOME/.bun"
+    export PATH="$BUN_INSTALL/bin:$PATH"
+fi
+
+# --- 调试检查 ---
+# 打印一下，看看现在找到的是不是新版本
+#echo "Node path: $(which node)" > /tmp/debug_env.log
+#echo "Node version: $(node -v)" >> /tmp/debug_env.log
+#echo "Bun path: $(which bun)" >> /tmp/debug_env.log
+
 
 echo "========================================="
 echo "VovBlog Publisher 启动脚本"
