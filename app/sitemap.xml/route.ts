@@ -14,7 +14,7 @@ export async function GET() {
   xml += '  <url>\n'
   xml += `    <loc>${escapeXml(baseUrl)}</loc>\n`
   xml += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`
-  xml += '    <changefreq>daily</changefreq>\n'
+  xml += '    <changefreq>weekly</changefreq>\n'
   xml += '    <priority>1.0</priority>\n'
   xml += '  </url>\n'
 
@@ -25,7 +25,7 @@ export async function GET() {
     xml += '  <url>\n'
     xml += `    <loc>${escapeXml(postUrl)}</loc>\n`
     xml += `    <lastmod>${post.date.split('T')[0]}</lastmod>\n`
-    xml += '    <changefreq>weekly</changefreq>\n'
+    xml += '    <changefreq>never</changefreq>\n'
     xml += '    <priority>0.8</priority>\n'
 
     // 添加 Google News 扩展
