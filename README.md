@@ -456,6 +456,7 @@ cloudflared tunnel route dns vovblog-publisher admin.domain
      - `wqws.waqi.uk` → 瓦器微声公众号
      - `yds.waqi.uk` → 盐读书公众号
      - `wbey.waqi.uk` → 五饼二鱼能量站公众号
+     - `bmhd.waqi.uk` → 拨摩的海岛公众号
      - `www.waqi.uk` → 主域名（显示所有内容）
    - 在子域名访问时自动隐藏文章来源筛选
 
