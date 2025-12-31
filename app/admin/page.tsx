@@ -11,14 +11,22 @@ export default function AdminPage() {
   const router = useRouter()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [isLoadingAll, setIsLoadingAll] = useState(false)
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
-    fetchPosts()
+    fetchPosts(10)
   }, [])
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (limit?: number) => {
     try {
-      const response = await fetch('/api/posts')
+      const params = new URLSearchParams()
+      params.set('includeContent', 'false')
+      if (limit) {
+        params.set('limit', limit.toString())
+      }
+
+      const response = await fetch(`/api/posts?${params.toString()}`)
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: 获取文章失败`)
@@ -26,20 +34,27 @@ export default function AdminPage() {
 
       const data = await response.json()
 
-      // 验证数据类型，确保是数组
       if (Array.isArray(data)) {
         setPosts(data)
+        if (!limit) {
+          setShowAll(true)
+        }
       } else {
         console.error('API 返回非数组数据:', data)
         setPosts([])
       }
     } catch (error) {
       console.error('获取文章失败:', error)
-      // 错误时设置为空数组，防止 .map() 调用失败
       setPosts([])
     } finally {
       setLoading(false)
+      setIsLoadingAll(false)
     }
+  }
+
+  const handleLoadAll = async () => {
+    setIsLoadingAll(true)
+    await fetchPosts()
   }
 
   const handleDelete = async (slug: string) => {
@@ -188,6 +203,18 @@ export default function AdminPage() {
               </div>
             </div>
           ))}
+
+          {!showAll && (
+            <div className="text-center py-6">
+              <button
+                onClick={handleLoadAll}
+                disabled={isLoadingAll}
+                className="px-6 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isLoadingAll ? '加载中...' : `加载全部文章（当前显示 ${posts.length} 篇）`}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

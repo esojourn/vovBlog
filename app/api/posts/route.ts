@@ -13,6 +13,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const slug = searchParams.get('slug')
+    const limitParam = searchParams.get('limit')
+    const includeContentParam = searchParams.get('includeContent')
 
     if (slug) {
       const post = await getPostBySlug(slug)
@@ -25,7 +27,12 @@ export async function GET(request: Request) {
       return NextResponse.json(post)
     }
 
-    const posts = await getAllPosts()
+    const includeContent = includeContentParam === 'true'
+    const allPosts = await getAllPosts(includeContent)
+
+    const limit = limitParam ? parseInt(limitParam, 10) : undefined
+    const posts = limit ? allPosts.slice(0, limit) : allPosts
+
     return NextResponse.json(posts)
   } catch (error) {
     console.error('获取文章失败:', error)
