@@ -27,7 +27,9 @@
       "Bash(node -e:*)",
       "Bash(test:*)",
       "Bash(cat:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(du:*)",
+      "mcp__Playwright__browser_click"
     ],
     "deny": [],
     "ask": []

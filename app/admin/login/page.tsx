@@ -59,8 +59,8 @@ export default function AdminLogin() {
         return
       }
 
-      // 登录成功，重定向到管理页面
-      router.push('/admin')
+      // 登录成功，重定向到创建页面
+      router.push('/admin/new')
       // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
     } catch (err) {
       setError('网络错误，请重试')
