@@ -29,7 +29,7 @@
 - 🏷️ **标签和分类系统**：灵活的内容组织方式
 - 📱 **响应式设计**：在任何设备上都有良好的阅读体验
 - ⚡ **极速部署**：零配置部署到 Vercel
-- 📱 **远程发布**（v1.4.0 新增）：通过 Cloudflare Tunnel 在手机上发布文章
+- 📱 **远程发布**（v1.4.0 新增）：通过 Cloudflare Tunnel 在家庭环境建立独立发布端，保障顺畅抓取，方便在手机上随时转载文章
 - 🔒 **登录限流**（v1.4.0 新增）：防止暴力破解，15 分钟最多 5 次尝试
 - 🚀 **Git 自动同步**（v1.4.0 新增）：保存后自动推送到 GitHub，触发 Vercel 部署
 - 🔍 **SEO 优化**（v1.3.0 新增）：增强搜索引擎索引能力
@@ -42,7 +42,8 @@
 ## 🚀 本地部署 
 文章发布需要本地部署。在本地发布后，文章保存为.mdx文件。git push到github后，自动同步vercel。这样设计的原因是：
 1. 不需要数据库支持，避免依赖付费服务。
-2. 微信公众号阻挡爬虫抓取，但支持本地浏览。程序使用本地无头浏览器访问，不会触发反爬虫检测。
+2. 网络：如本地使用家庭网络环境，对比服务器机房环境，天然对浏览公众号友好。
+3. 浏览器：程序使用本地无头浏览器访问，模拟人工浏览环境。
 
 进行以下步骤时，先确认上面“快速开始”中，线上vercel环境已经完成部署。
 
@@ -56,7 +57,7 @@ cd vovBlog
 
 ### 2. 安装 Node.js 环境
 
-访问 [nodejs.org](https://nodejs.org) 下载并安装 LTS 版本（推荐 24.x）。
+访问 [nodejs.org](https://nodejs.org) 下载并安装 LTS 版本（推荐 24.x 建议使用nvm管理版本）。
 
 ### 3. 安装依赖
 
@@ -78,22 +79,21 @@ bun --version
 bun install
 ```
 
-**如果在 WSL 中使用 Playwright（用于微信文章导入）：**
+**WSL/Linux 用户额外步骤（用于微信文章导入）：**
+
+首次使用时需要安装系统依赖库：
 
 ```bash
-# WSL/Ubuntu 需要安装额外的依赖库
+# 安装 Chromium 所需的系统库
 bunx playwright install-deps chromium
-bunx playwright install-deps
-bunx playwright install
-
-# 因版本问题，无法找到playwright时：
- ./node_modules/.bin/playwright install --with-deps chromium
 ```
 
-**注意：** 本项目使用 Bun 作为包管理器，比 npm 快 6-10 倍。如果未安装 Bun，可以使用 npm 或 yarn 替代：
-```bash
-npm install  # 或 yarn install
-```
+**说明：**
+- Playwright 浏览器会在 `bun install` 时自动下载
+- 上述命令仅用于安装操作系统级别的依赖库（如 libatk、libnss3 等）
+- 建议使用linux或wsl环境
+
+
 
 ### 4. 配置环境变量
 
@@ -111,6 +111,11 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
 ADMIN_PASSWORD=password
+
+NEXT_PUBLIC_SITE_URL=http://YourDomain.com
+NEXT_PUBLIC_GA_ID=G-xxxx
+
+PUBLISHER_MODE=true
 ```
 
 ### 5. 启动开发服务器
@@ -451,6 +456,7 @@ cloudflared tunnel route dns vovblog-publisher admin.domain
      - `wqws.waqi.uk` → 瓦器微声公众号
      - `yds.waqi.uk` → 盐读书公众号
      - `wbey.waqi.uk` → 五饼二鱼能量站公众号
+     - `bmhd.waqi.uk` → 拨摩的海岛公众号
      - `www.waqi.uk` → 主域名（显示所有内容）
    - 在子域名访问时自动隐藏文章来源筛选
 
@@ -468,43 +474,109 @@ cloudflared tunnel route dns vovblog-publisher admin.domain
 
 ## 📦 技术栈
 
-- **框架**：Next.js 16 (App Router)
-- **包管理**：Bun
-- **编辑器**：TipTap (富文本编辑器)
-- **样式**：Tailwind CSS
-- **图片存储**：Cloudinary
-- **内容格式**：MDX
-- **网络爬取**：Playwright (微信公众号导入)
+- **框架**：Next.js 16.0.7 (App Router)
+- **运行时**：Bun 1.3.1
+- **React**：React 19.2.0
+- **编辑器**：TipTap 2.10.0 (富文本编辑器)
+- **样式**：Tailwind CSS 3.4.0
+- **图片存储**：Cloudinary 2.5.1
+- **内容格式**：MDX (next-mdx-remote 5.0.0)
+- **网络爬取**：Playwright 1.56.1 (微信公众号导入)
+- **类型检查**：TypeScript 5.7.0
 - **部署**：Vercel
 
-## 🎯 项目结构
+## 🔐 架构核心：认证和访问控制
+
+VovBlog 使用 Next.js 中间件 (`middleware.ts`) 实现全局认证保护和访问控制：
+
+### 中间件功能
+
+1. **管理页面保护**
+   - 所有 `/admin/*` 路径需要登录
+   - 未登录用户自动重定向到 `/admin/login`
+
+2. **发布端模式控制**
+   - 当 `PUBLISHER_MODE=true` 时，未登录用户无法查看文章内容
+   - 适用于需要付费墙或会员制的场景
+
+3. **会话管理**
+   - 基于 Cookie 的会话认证
+   - httpOnly Cookie 防止 XSS 攻击
+
+### 认证 API
+
+- `POST /api/auth/login` - 用户登录（带限流保护，15 分钟最多 5 次尝试）
+- `POST /api/auth/logout` - 用户登出
+- `GET /api/auth/check` - 检查会话状态
+
+### 限流保护
+
+`lib/rate-limit.ts` 实现基于 IP 的登录限流：
+- 15 分钟内最多 5 次登录尝试
+- 支持 Cloudflare 真实 IP 识别（`CF-Connecting-IP` 头）
+- 超限后显示剩余冷却时间
+
+## 🎯 项目架构
+
+### 核心架构文件
+
+VovBlog 采用 Next.js 16 App Router 架构，以下是关键文件：
+
+**🔐 认证和访问控制：**
+- `/middleware.ts` - Next.js 中间件，处理认证保护和发布模式访问控制
+- `/app/admin/login/page.tsx` - 管理员登录页面
+- `/app/api/auth/` - 完整的认证 API 系统
+- `/app/unauthorized/page.tsx` - 未授权访问提示页
+
+**📂 详细项目结构：**
 
 ```
 VovBlog/
+├── middleware.ts           # ⭐ Next.js 中间件（认证保护、发布模式）
 ├── app/                    # Next.js App Router
 │   ├── admin/             # 管理后台
+│   │   ├── login/page.tsx # 登录页面
 │   │   ├── new/           # 创建文章
-│   │   └── edit/[slug]/   # 编辑文章
+│   │   ├── edit/[slug]/   # 编辑文章
+│   │   └── page.tsx       # 文章列表
 │   ├── blog/[slug]/       # 文章详情页（含 JSON-LD Schema）
+│   ├── unauthorized/      # 未授权访问页面
 │   ├── api/               # API 路由
+│   │   ├── auth/          # 🆕 认证系统
+│   │   │   ├── login/route.ts    # 登录（带限流）
+│   │   │   ├── logout/route.ts   # 登出
+│   │   │   └── check/route.ts    # 检查会话
 │   │   ├── posts/         # 文章 CRUD 操作
 │   │   ├── upload/        # 图片上传到 Cloudinary
 │   │   ├── proxy-upload/  # 代理上传（绕过 CORS）
 │   │   └── fetch-wechat-article/ # ⭐ 微信公众号导入
-│   ├── sitemap.xml/       # 🆕 增强 sitemap（Google News 扩展）
-│   ├── feed.xml/          # 🆕 RSS Feed
-│   ├── sitemap-page/      # 🆕 HTML 站点地图
+│   ├── sitemap.xml/       # 增强 sitemap（Google News 扩展）
+│   ├── feed.xml/          # RSS Feed
+│   ├── sitemap-page/      # HTML 站点地图
 │   ├── layout.tsx         # 根布局（含 JSON-LD Schema）
 │   └── page.tsx           # 首页
 ├── components/            # React 组件
 │   ├── TipTapEditor.tsx  # 编辑器组件（支持导入内容）
 │   ├── PostCard.tsx      # 文章卡片
-│   └── SearchBar.tsx     # 搜索框
-├── lib/                   # 工具函数
+│   ├── SearchBar.tsx     # 搜索框
+│   ├── ThemeToggle.tsx   # 主题切换
+│   └── EditButton.tsx    # 条件编辑按钮
+├── lib/                   # 工具函数与业务逻辑
 │   ├── cloudinary.ts     # Cloudinary 配置
-│   ├── posts.ts          # 文章管理（支持 originalUrl）
-│   └── search.ts         # 搜索功能
-└── content/posts/         # MDX 文章文件
+│   ├── posts.ts          # 文章管理
+│   ├── search.ts         # 两层搜索策略
+│   ├── git-sync.ts       # 🆕 Git 自动同步（v1.4.0）
+│   ├── rate-limit.ts     # 🆕 登录限流保护（v1.4.0）
+│   ├── publisher-mode.ts # 🆕 发布端模式配置（v1.4.0）
+│   ├── subdomain-config.ts # 🆕 子域名配置（v1.2.0）
+│   ├── source-config.ts  # 🆕 文章来源配置（v1.2.0）
+│   ├── domain-utils.ts   # 域名解析工具
+│   ├── imageProcessor.ts # 图片处理工具
+│   └── utils.ts          # 通用工具函数
+├── content/posts/         # MDX 文章文件
+└── scripts/               # 实用脚本
+    ├── start-publisher.sh    # Linux/Mac 启动脚本
+    └── start-publisher.bat   # Windows 启动脚本
 ```
 
 ### 微信公众号文章导入详解
@@ -652,8 +724,11 @@ A: 目前仅支持微信公众号 (mp.weixin.qq.com)。未来可根据需求添�
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Cloudinary Cloud Name | 是 |
 | `CLOUDINARY_API_KEY` | Cloudinary API Key | 是 |
 | `CLOUDINARY_API_SECRET` | Cloudinary API Secret | 是 |
-| `NEXT_PUBLIC_SITE_URL` | 网站 URL（用于 SEO） | 否 |
+| `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Cloudinary 上传预设 | 否 |
+| `NEXT_PUBLIC_SITE_URL` | 网站 URL（用于 SEO 和子域名识别） | 是 |
+| `NEXT_PUBLIC_GA_ID` | Google Analytics 追踪 ID（如 G-XXXXXXXXXX） | 否 |
 | `ADMIN_PASSWORD` | 管理员密码（建议 16 位以上，包含大小写、数字、特殊符号） | 是 |
+| `PUBLISHER_MODE` | 发布端模式（true/false，启用时未登录用户无法查看内容） | 否 |
 
 ## 📄 许可证
 

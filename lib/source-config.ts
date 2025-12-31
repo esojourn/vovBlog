@@ -61,6 +61,14 @@ export const SOURCES: SourceConfig[] = [
     qrCode: '/qrcodes/wbey.png',
     description: '灵粮供应站，属灵能量加油站',
   },
+  {
+    id: '"拨摩的海岛"公众号',
+    name: '"拨摩的海岛"公众号',
+    shortName: '拨摩的海岛',
+    subdomain: 'bmhd',
+    qrCode: '/qrcodes/bmhd.png',
+    description: '灵粮供应站，属灵能量加油站',
+  },
 ]
 
 /**

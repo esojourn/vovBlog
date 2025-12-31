@@ -14,7 +14,7 @@ export async function GET() {
   xml += '  <url>\n'
   xml += `    <loc>${escapeXml(baseUrl)}</loc>\n`
   xml += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`
-  xml += '    <changefreq>daily</changefreq>\n'
+  xml += '    <changefreq>weekly</changefreq>\n'
   xml += '    <priority>1.0</priority>\n'
   xml += '  </url>\n'
 
@@ -25,7 +25,7 @@ export async function GET() {
     xml += '  <url>\n'
     xml += `    <loc>${escapeXml(postUrl)}</loc>\n`
     xml += `    <lastmod>${post.date.split('T')[0]}</lastmod>\n`
-    xml += '    <changefreq>weekly</changefreq>\n'
+    xml += '    <changefreq>never</changefreq>\n'
     xml += '    <priority>0.8</priority>\n'
 
     // 添加 Google News 扩展
@@ -36,9 +36,6 @@ export async function GET() {
     xml += '      </news:publication>\n'
     xml += `      <news:publication_date>${post.date}</news:publication_date>\n`
     xml += `      <news:title>${escapeXml(post.title)}</news:title>\n`
-    if (post.source) {
-      xml += `      <news:keywords>${escapeXml(post.source)}</news:keywords>\n`
-    }
     xml += '    </news:news>\n'
 
     // 添加 Image 扩展（如果有分类或标签作为图片说明）

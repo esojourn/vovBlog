@@ -79,7 +79,15 @@ app/                          # Next.js App Router (主要应用代码)
 │   └── page.tsx
 └── api/                     # API 路由
     ├── posts/route.ts       # GET/POST/PUT/DELETE 文章数据
-    └── upload/route.ts      # 图片上传到 Cloudinary
+    ├── upload/route.ts      # 图片上传到 Cloudinary
+    ├── proxy-upload/route.ts # 后端代理上传（解决 CORS 问题）
+    ├── fetch-wechat-article/route.ts # 微信公众号文章导入
+    ├── auth/                # 认证相关 API
+    │   ├── login/route.ts   # 登录
+    │   ├── logout/route.ts  # 登出
+    │   └── check/route.ts   # 检查会话状态
+    ├── feed.xml/route.ts    # RSS 源
+    └── sitemap.xml/route.ts # XML 网站地图
 
 components/                   # React 组件库（可复用的 UI 组件）
 ├── HomeClient.tsx           # 首页客户端组件（搜索、筛选、列表）
@@ -123,7 +131,300 @@ tsconfig.json               # TypeScript 配置（路径别名 @/* -> ./）
    - 客户端组件 `HomeClient` 实现全文搜索和分类/标签筛选
    - 基于内存数据，在浏览器中执行筛选逻辑
 
+5. **微信公众号文章导入**
+   - 用户在 `/admin/new` 页面输入微信文章 URL
+   - 调用 `/api/fetch-wechat-article` 使用 Playwright 抓取文章
+   - 后端提取：标题、内容、发布日期、公众号名称
+   - 使用 `matchSourceByAccountName()` 自动识别来源（`lib/source-config.ts:111`）
+   - 通过 `/api/proxy-upload` 代理下载图片（解决 CORS 限制）
+   - HTML 转 Markdown（Turndown）后自动填充表单
+
+6. **自动 Git 同步**
+   - 文章保存/更新/删除后，`lib/git-sync.ts` 自动触发
+   - 使用 `setImmediate()` 异步执行，不阻塞用户操作
+   - 自动提交到 `content/posts/` 并推送到 GitHub
+   - 失败仅记录日志，不影响文章发布
+
 ## 关键技术细节
+
+### 多来源博客系统
+
+VovBlog 支持管理多个内容来源（公众号），每个来源可独立访问。
+
+#### 来源配置
+
+所有来源在 `lib/source-config.ts` 中集中管理：
+
+```typescript
+export const SOURCES: SourceConfig[] = [
+  {
+    id: '"瓦器微声"公众号',
+    name: '"瓦器微声"公众号',
+    shortName: '瓦器微声',
+    subdomain: 'wqws',
+    qrCode: '/qrcodes/wqws.png',
+    description: '信仰与生活的精妙交织',
+  },
+  {
+    id: '"盐读书"公众号',
+    name: '"盐读书"公众号',
+    shortName: '盐读书',
+    subdomain: 'yds',
+    qrCode: '/qrcodes/yds.png',
+    description: '阅读的味道，生活的调味料',
+  },
+  // ... 其他来源
+]
+```
+
+#### 子域名访问
+
+- **主域名** (`www.waqi.uk`): 显示所有来源的文章，显示来源筛选器
+- **子域名** (`wqws.waqi.uk`): 只显示该来源的文章，隐藏来源筛选器
+
+域名解析通过 `lib/domain-utils.ts` 实现，服务端根据 `headers().get('host')` 自动过滤文章。
+
+#### 自动来源识别
+
+导入微信文章时，系统自动匹配公众号名称到来源（`lib/source-config.ts:111`）：
+
+```typescript
+export function matchSourceByAccountName(accountName: string): string | null {
+  // 精确匹配
+  const exactMatch = SOURCES.find(s => s.shortName === accountName)
+  if (exactMatch) return exactMatch.id
+
+  // 模糊匹配（双向包含）
+  const fuzzyMatch = SOURCES.find(s =>
+    accountName.includes(s.shortName) || s.shortName.includes(accountName)
+  )
+  return fuzzyMatch?.id || null
+}
+```
+
+#### 添加新来源
+
+1. 在 `lib/source-config.ts` 的 `SOURCES` 数组中添加新配置
+2. 在 `public/qrcodes/` 目录添加二维码图片（可选）
+3. 在 Vercel 和 DNS 配置新的子域名（参见部署章节）
+
+### 搜索与性能优化
+
+#### 两层搜索策略
+
+`lib/search.ts` 实现了智能两层搜索，平衡性能与准确性：
+
+**第 1 层：快速元数据搜索（90% 的查询）**
+- 搜索范围：标题、描述、标签、分类
+- 特点：极快，适合大多数查询
+
+**第 2 层：全文搜索（仅当第 1 层无结果）**
+- 搜索范围：完整文章内容
+- 特点：较慢，但不会遗漏内容
+
+```typescript
+// lib/search.ts:10-33
+export function searchPosts(posts: Post[], query: string): Post[] {
+  // 第1层：快速元数据过滤
+  const quickResults = posts.filter((post) => {
+    const titleMatch = post.title.toLowerCase().includes(lowerQuery)
+    const descriptionMatch = post.description?.toLowerCase().includes(lowerQuery)
+    // ... 标签、分类匹配
+  })
+
+  // 如果元数据找到结果，直接返回（避免全文搜索）
+  if (quickResults.length > 0) return quickResults
+
+  // 第2层：全文搜索（只有必要时）
+  return posts.filter((post) =>
+    post.content.toLowerCase().includes(lowerQuery)
+  )
+}
+```
+
+#### 缓存策略
+
+**文章列表缓存**（`lib/posts.ts`）：
+- 生产环境：60 秒缓存
+- 开发环境：禁用缓存
+- 避免频繁文件系统读取
+
+### 微信文章导入
+
+#### 使用方法
+
+1. 在 `/admin/new` 页面点击"从微信导入"
+2. 粘贴微信公众号文章链接
+3. 系统自动提取：
+   - 文章标题、内容
+   - 发布日期
+   - 公众号名称 → 自动匹配来源
+   - 所有图片（自动上传到 Cloudinary）
+
+#### 技术实现
+
+**抓取引擎**（`app/api/fetch-wechat-article/route.ts`）：
+- 使用 Playwright (Chromium) 渲染页面
+- 提取 `<meta>` 标签获取标题、日期
+- DOM 解析获取正文内容和公众号名称
+
+**CORS 图片代理**（`app/api/proxy-upload/route.ts`）：
+- 微信 CDN 图片有 Referer 限制，前端无法直接访问
+- 后端代理下载图片后上传到 Cloudinary
+- 流程：微信 URL → 后端代理 → Cloudinary → 返回新 URL
+
+**内容转换**：
+- HTML → Markdown（Turndown 库）
+- DOMPurify 清洗危险标签
+- TipTap 编辑器加载 Markdown 内容
+
+#### 配置要求
+
+需要安装 Playwright 浏览器（自动通过 postinstall hook）：
+```bash
+bun install
+# 自动执行：playwright install chromium --with-deps
+```
+
+### 自动 Git 同步
+
+#### 工作原理
+
+每次创建、更新或删除文章时，系统自动提交并推送到 GitHub。
+
+**实现文件**：`lib/git-sync.ts`
+
+#### 执行流程
+
+1. 文章操作完成后，调用 `syncToGithubAsync(slug, action)`
+2. 使用 `setImmediate()` 异步执行，**不阻塞** HTTP 响应
+3. 执行 Git 命令：
+   ```bash
+   git add content/posts/
+   git commit -m "Auto: 新增文章 article-slug"
+   git push
+   ```
+4. 失败时只记录日志，不影响用户操作
+
+#### 提交消息格式
+
+```
+Auto: 新增文章 article-slug    # 创建文章
+Auto: 更新文章 article-slug    # 更新文章
+Auto: 删除文章 article-slug    # 删除文章
+```
+
+#### 触发位置
+
+- `app/api/posts/route.ts` POST/PUT/DELETE 处理器
+- 在响应返回前触发，但不等待完成
+
+#### 配置要求
+
+需要配置 Git 认证：
+- SSH 密钥（推荐）
+- 或 Personal Access Token
+
+**本地测试时**，确保已配置 Git：
+```bash
+git config user.name "Your Name"
+git config user.email "your@email.com"
+```
+
+### 图片上传系统
+
+#### 三种上传模式
+
+**1. 直接上传**（`/api/upload`）
+- 用户拖拽/粘贴本地图片
+- Base64 图片
+- 前端可访问的 URL
+
+**2. CORS 代理上传**（`/api/proxy-upload`）
+- 微信 CDN 图片（有 Referer 限制）
+- 其他有 CORS 限制的图片源
+- 后端代理下载 → Cloudinary
+
+**3. 批量上传**
+- 编辑器同时处理最多 10 张图片
+- 使用 `Promise.all()` 并发上传
+- 超过限制时自动分批处理
+
+#### Cloudinary 优化配置
+
+`lib/cloudinary.ts` 设置：
+- 自动转换为 WebP/AVIF 格式
+- 最大宽度：1200px
+- 质量：auto
+- 文件夹：`vovblog/posts`
+
+### 认证系统
+
+#### 认证方式
+
+**基于 Cookie 的会话认证**：
+- 登录后设置 `httpOnly` Cookie
+- 所有管理页面检查会话状态
+- 登出时清除 Cookie
+
+#### API 路由
+
+- `POST /api/auth/login` - 登录（验证密码）
+- `POST /api/auth/logout` - 登出
+- `GET /api/auth/check` - 检查会话状态
+
+#### Publisher 模式
+
+特殊功能：未登录时隐藏部分内容（用于特定公众号）
+
+**实现位置**：
+- `app/blog/[slug]/page.tsx` 检查认证状态
+- 未认证且文章标记为 `publisherOnly` 时显示登录提示
+
+#### 配置密码
+
+密码通过环境变量配置：
+
+```env
+ADMIN_PASSWORD=your-secure-password
+```
+
+### SEO 功能
+
+#### 自动生成的 SEO 资源
+
+1. **Sitemap**（`app/sitemap.xml/route.ts`）
+   - 自动包含所有已发布文章
+   - 包含首页和文章详情页
+   - 动态生成，始终最新
+
+2. **RSS Feed**（`app/feed.xml/route.ts`）
+   - 标准 RSS 2.0 格式
+   - 包含文章摘要和全文
+   - 访问：`https://www.waqi.uk/feed.xml`
+
+3. **结构化数据**（`app/blog/[slug]/page.tsx`）
+   - JSON-LD Article schema
+   - 包含：标题、作者、发布日期、图片
+   - 增强 Google 搜索展示
+
+4. **Meta 标签**
+   - Open Graph（Facebook/社交分享）
+   - Twitter Card（Twitter 分享）
+   - 每篇文章自动生成
+
+#### 阅读时间计算
+
+```typescript
+// lib/utils.ts
+export function calculateReadingTime(content: string): number {
+  const wordsPerMinute = 200
+  const wordCount = content.split(/\s+/).length
+  return Math.ceil(wordCount / wordsPerMinute)
+}
+```
+
+## 技术实现细节
 
 ### gray-matter 和 Markdown 格式
 文章文件格式示例：
@@ -237,10 +538,30 @@ export const SUBDOMAIN_SOURCE_MAP: Record<string, string> = {
 ### API 设计
 - 文章 API (`/api/posts`) 支持 CRUD 操作
   - `GET ?slug=xxx` - 获取单篇文章
-  - `GET` - 获取所有文章
-  - `POST` - 创建文章
-  - `PUT` - 更新文章
-  - `DELETE ?slug=xxx` - 删除文章
+  - `GET` - 获取所有文章列表
+  - `POST` - 创建新文章（触发 Git 同步）
+  - `PUT` - 更新文章（触发 Git 同步）
+  - `DELETE ?slug=xxx` - 删除文章（触发 Git 同步）
+
+- 图片上传 API
+  - `POST /api/upload` - 直接上传图片（本地文件、Base64）
+  - `POST /api/proxy-upload` - 代理上传（CORS 受限 URL）
+
+- 文章导入 API
+  - `POST /api/fetch-wechat-article` - 导入微信公众号文章
+    - Body: `{ url: string }`
+    - 返回：`{ title, content, date, author, source }`
+
+- 认证 API (`/api/auth/`)
+  - `POST /api/auth/login` - 登录
+    - Body: `{ password: string }`
+    - 返回：设置 httpOnly Cookie
+  - `POST /api/auth/logout` - 登出
+  - `GET /api/auth/check` - 检查登录状态
+
+- SEO API
+  - `GET /feed.xml` - RSS 2.0 订阅源
+  - `GET /sitemap.xml` - XML 网站地图
 
 ## 常见任务
 

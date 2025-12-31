@@ -28,8 +28,10 @@
       "Bash(test:*)",
       "Bash(cat:*)",
       "Bash(git commit:*)",
-      "Bash(du:*)",
-      "mcp__Playwright__browser_click"
+      "Bash(bunx playwright:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

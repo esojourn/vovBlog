@@ -9,8 +9,8 @@ export async function POST(_request: NextRequest) {
   // 清除session cookie
   response.cookies.set('admin_session', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true,
+    sameSite: 'lax',
     maxAge: 0, // 立即过期
     path: '/',
   })
