@@ -67,7 +67,7 @@ export const SOURCES: SourceConfig[] = [
     shortName: '拨摩的海岛',
     subdomain: 'bmhd',
     qrCode: '/qrcodes/bmhd.png',
-    description: '灵粮供应站，属灵能量加油站',
+    description: '尔识真理，真理释尔',
   },
 ]
 

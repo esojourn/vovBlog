@@ -590,6 +590,7 @@ export const SUBDOMAIN_SOURCE_MAP: Record<string, string> = {
      - `wqws.waqi.uk`
      - `yds.waqi.uk`
      - `wbey.waqi.uk`
+     - `bmhd.waqi.uk`
 
 2. **配置 DNS 记录**
    - 登录您的域名提供商（例如：Cloudflare、阿里云、腾讯云）
