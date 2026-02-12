@@ -69,6 +69,14 @@ export const SOURCES: SourceConfig[] = [
     qrCode: '/qrcodes/bmhd.png',
     description: '尔识真理，真理释尔',
   },
+  {
+    id: '"小麦的书房"公众号',
+    name: '"小麦的书房"公众号',
+    shortName: '小麦的书房',
+    subdomain: 'xmdsf',
+    qrCode: '/qrcodes/xmdsf.png',
+    description: '小麦书房|阅读与信仰的相遇专注于书评与文学评论，涵盖经典与当代作品，尤其关注基督教小说与艺术叙事，从信仰视角探讨文学的深意与人性的光影。',
+  },
 ]
 
 /**
