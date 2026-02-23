@@ -4,15 +4,43 @@ import { useState, useEffect, useCallback } from 'react'
 import { List, X } from 'lucide-react'
 import type { TocItem } from '@/lib/toc'
 
+import { FONT_SIZES, STORAGE_KEY, DEFAULT_INDEX } from '@/components/ArticleContent'
+
 const levelIndent: Record<number, string> = {
   1: 'pl-0',
   2: 'pl-4',
   3: 'pl-8',
 }
 
+// 目录字号映射，与正文档位对应
+const TOC_TEXT_SIZES = [
+  'text-sm',    // prose-base
+  'text-base',  // prose-lg
+  'text-base',  // prose-xl
+  'text-lg',    // prose-2xl
+  'text-lg',    // 超大1
+  'text-xl',    // 超大2
+]
+
 export default function TableOfContents({ items }: { items: TocItem[] }) {
   const [activeId, setActiveId] = useState<string>('')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [fontIndex, setFontIndex] = useState(DEFAULT_INDEX)
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved !== null) {
+      const idx = parseInt(saved, 10)
+      if (idx >= 0 && idx < FONT_SIZES.length) setFontIndex(idx)
+    }
+
+    const handleChange = (e: Event) => {
+      const idx = (e as CustomEvent).detail
+      if (idx >= 0 && idx < FONT_SIZES.length) setFontIndex(idx)
+    }
+    window.addEventListener('vovblog-font-size-change', handleChange)
+    return () => window.removeEventListener('vovblog-font-size-change', handleChange)
+  }, [])
 
   // IntersectionObserver 追踪当前可见标题
   useEffect(() => {
@@ -49,8 +77,10 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
     []
   )
 
+  const tocSize = TOC_TEXT_SIZES[fontIndex]
+
   const navList = (
-    <nav className="text-sm">
+    <nav className={`${tocSize} transition-all`}>
       <ul className="space-y-1">
         {items.map((item) => (
           <li key={item.id} className={levelIndent[item.level] ?? 'pl-0'}>

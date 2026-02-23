@@ -8,6 +8,7 @@ import { Calendar, Clock, Tag, FolderOpen, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { EditButton } from '@/components/EditButton'
 import TableOfContents from '@/components/TableOfContents'
+import ArticleContent from '@/components/ArticleContent'
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -152,12 +153,10 @@ export default async function BlogPostPage({
         )}
       </header>
 
-      {/* 文章内容 */}
-      <div className="prose prose-xl max-w-none">
+      {/* 文章内容 + 目录导航（共享字号控制） */}
+      <ArticleContent>
         <MDXRemote source={post.content} options={{ mdxOptions: { rehypePlugins: [rehypeSlug] } }} />
-      </div>
-
-      {/* 目录导航 */}
+      </ArticleContent>
       {tocItems.length > 0 && <TableOfContents items={tocItems} />}
       
       {/* 文章来源 */}
