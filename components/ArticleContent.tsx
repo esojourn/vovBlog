@@ -38,7 +38,7 @@ export default function ArticleContent({ children }: { children: ReactNode }) {
 
   return (
     <div data-font-size={sizeIndex}>
-      <div className="flex items-center gap-2 mb-4 justify-end">
+      <div className="flex items-center gap-2 mb-4 justify-start">
         <span className="text-lg text-muted-foreground">文字大小：</span>
         <button
           onClick={() => update(Math.max(0, sizeIndex - 1))}
