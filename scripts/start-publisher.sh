@@ -118,7 +118,7 @@ echo "========================================="
 echo "访问: https://admin.domain/admin"
 echo ""
 
-cloudflared tunnel run vovblog-publisher &
+cloudflared tunnel --protocol http2 run vovblog-publisher &
 TUNNEL_PID=$!
 
 # 等待进程
