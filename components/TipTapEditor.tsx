@@ -818,7 +818,7 @@ export default function TipTapEditor({
   }
 
   return (
-    <div className="border rounded-lg max-h-[70vh] overflow-y-auto">
+    <div className="border rounded-lg overflow-y-auto resize-y" style={{ minHeight: '300px', height: '70vh' }}>
       {/* 工具栏 */}
       <div className="bg-muted border-b p-2 flex flex-wrap gap-1 sticky top-0 z-10">
         <button
