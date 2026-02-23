@@ -39,7 +39,7 @@ export default function ArticleContent({ children }: { children: ReactNode }) {
   return (
     <div data-font-size={sizeIndex}>
       <div className="flex items-center gap-2 mb-4 justify-end">
-        <span className="text-sm text-muted-foreground">文字大小：</span>
+        <span className="text-lg text-muted-foreground">文字大小：</span>
         <button
           onClick={() => update(Math.max(0, sizeIndex - 1))}
           disabled={sizeIndex === 0}
@@ -57,7 +57,7 @@ export default function ArticleContent({ children }: { children: ReactNode }) {
           <AArrowUp className="w-6 h-6" />
         </button>
       </div>
-      <div className={`prose ${sizeClass} max-w-none leading-loose [&_p]:leading-loose [&_li]:leading-loose transition-all`}>
+      <div className={`prose ${sizeClass} max-w-none leading-loose [&_p]:leading-loose [&_li]:leading-loose overflow-x-hidden`}>
         {children}
       </div>
     </div>

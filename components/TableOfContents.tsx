@@ -80,7 +80,7 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
   const tocSize = TOC_TEXT_SIZES[fontIndex]
 
   const navList = (
-    <nav className={`${tocSize} transition-all`}>
+    <nav className={tocSize}>
       <ul className="space-y-1">
         {items.map((item) => (
           <li key={item.id} className={levelIndent[item.level] ?? 'pl-0'}>
