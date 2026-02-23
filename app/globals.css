@@ -285,6 +285,11 @@
   @apply bg-card;
 }
 
+/* 文章正文 h1 缩小，接近 h2 大小 */
+.prose h1 {
+  font-size: 1.75em;
+}
+
 /* 锚点跳转偏移，防止被导航栏遮挡 */
 .prose h1[id],
 .prose h2[id],
