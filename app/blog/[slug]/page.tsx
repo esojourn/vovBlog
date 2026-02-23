@@ -1,10 +1,13 @@
 import { getAllPosts, getPostBySlug } from '@/lib/posts'
 import { notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import rehypeSlug from 'rehype-slug'
 import { formatDate, calculateReadingTime } from '@/lib/utils'
+import { extractTocFromMarkdown } from '@/lib/toc'
 import { Calendar, Clock, Tag, FolderOpen, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import { EditButton } from '@/components/EditButton'
+import TableOfContents from '@/components/TableOfContents'
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -67,6 +70,7 @@ export default async function BlogPostPage({
   }
 
   const readingTime = calculateReadingTime(post.content)
+  const tocItems = extractTocFromMarkdown(post.content)
 
   // JSON-LD 结构化数据
   const jsonLd = {
@@ -150,8 +154,11 @@ export default async function BlogPostPage({
 
       {/* 文章内容 */}
       <div className="prose prose-xl max-w-none">
-        <MDXRemote source={post.content} />
+        <MDXRemote source={post.content} options={{ mdxOptions: { rehypePlugins: [rehypeSlug] } }} />
       </div>
+
+      {/* 目录导航 */}
+      {tocItems.length > 0 && <TableOfContents items={tocItems} />}
       
       {/* 文章来源 */}
       <div className="mt-12 pt-8 border-t text-muted-foreground">
