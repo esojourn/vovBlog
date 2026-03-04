@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { EditButton } from '@/components/EditButton'
 import TableOfContents from '@/components/TableOfContents'
 import ArticleContent from '@/components/ArticleContent'
+import ReadingPositionManager from '@/components/ReadingPositionManager'
 
 export async function generateStaticParams() {
   const posts = await getAllPosts()
@@ -152,6 +153,14 @@ export default async function BlogPostPage({
           </p>
         )}
       </header>
+
+      {/* 阅读位置记忆（仅长文章） */}
+      {readingTime >= 3 && (
+        <ReadingPositionManager
+          slug={slug}
+          contentHash={`${post.content.length}-${post.content.slice(-50)}`}
+        />
+      )}
 
       {/* 文章内容 + 目录导航（共享字号控制） */}
       <ArticleContent>
