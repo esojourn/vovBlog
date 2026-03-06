@@ -157,8 +157,23 @@ export default function NewPostPage() {
       return
     }
 
+    if (!formData.content.trim()) {
+      alert('文章内容不能为空')
+      return
+    }
+
     if (!validateContent(formData.content)) {
       return
+    }
+
+    // 检查内容大小（警告用户）
+    const contentSize = new Blob([JSON.stringify(formData)]).size
+    if (contentSize > 5 * 1024 * 1024) { // 5MB
+      const confirmed = confirm(
+        `文章内容较大（${(contentSize / 1024 / 1024).toFixed(2)} MB），` +
+        `保存可能需要较长时间。是否继续？`
+      )
+      if (!confirmed) return
     }
 
     setSaving(true)
@@ -175,15 +190,23 @@ export default function NewPostPage() {
       })
 
       if (!response.ok) {
-        throw new Error('保存失败')
+        const errorData = await response.json().catch(() => ({ error: '未知错误' }))
+        alert(`保存失败: ${errorData.error || '请检查网络连接'}`)
+        return
       }
 
-      const { slug: savedSlug } = await response.json()
+      const result = await response.json()
+      if (!result.success) {
+        alert('保存失败，请重试')
+        return
+      }
+
+      const { slug: savedSlug } = result
       alert(publish ? '文章已发布！' : '草稿已保存！')
       router.push(publish ? `/blog/${savedSlug}` : '/admin')
     } catch (error) {
       console.error('保存失败:', error)
-      alert('保存失败，请重试')
+      alert('保存失败，请检查网络连接后重试')
     } finally {
       setSaving(false)
     }

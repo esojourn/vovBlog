@@ -9,6 +9,15 @@ import { slugify } from '@/lib/utils'
 import { getDefaultSource } from '@/lib/source-config'
 import { syncToGithubAsync } from '@/lib/git-sync'
 
+// 提高请求体大小限制到 10MB（支持超长文章）
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -46,6 +55,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const data = await request.json()
+
+    // 验证必需字段
+    if (!data.title || !data.title.trim()) {
+      return NextResponse.json(
+        { error: '标题不能为空' },
+        { status: 400 }
+      )
+    }
+
+    if (!data.content || !data.content.trim()) {
+      return NextResponse.json(
+        { error: '文章内容不能为空' },
+        { status: 400 }
+      )
+    }
+
     const slug = data.slug || slugify(data.title)
 
     await savePost(slug, {
@@ -81,6 +106,21 @@ export async function PUT(request: Request) {
     if (!slug) {
       return NextResponse.json(
         { error: '缺少 slug 参数' },
+        { status: 400 }
+      )
+    }
+
+    // 验证必需字段
+    if (!data.title || !data.title.trim()) {
+      return NextResponse.json(
+        { error: '标题不能为空' },
+        { status: 400 }
+      )
+    }
+
+    if (!data.content || !data.content.trim()) {
+      return NextResponse.json(
+        { error: '文章内容不能为空' },
         { status: 400 }
       )
     }
