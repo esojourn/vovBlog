@@ -96,15 +96,23 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
+# 获取 Tailscale IP 地址（多种方法）
+TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || ip addr | grep -oP '100\.\d+\.\d+\.\d+' | head -1 || echo "未检测到")
+
 # 启动 Next.js 生产服务器
 echo ""
 echo "========================================="
 echo "1️⃣  启动 Next.js 生产服务器..."
 echo "========================================="
-echo "访问: http://localhost:3000"
+echo "本地访问: http://localhost:3000"
+if [ "$TAILSCALE_IP" != "未检测到" ]; then
+  echo "Tailscale 访问: http://$TAILSCALE_IP:3000"
+else
+  echo "Tailscale: 未检测到 IP（请确保已加入 Tailscale 网络）"
+fi
 echo ""
 
-bun start &
+HOST=0.0.0.0 bun start &
 DEV_PID=$!
 
 # 等待开发服务器启动

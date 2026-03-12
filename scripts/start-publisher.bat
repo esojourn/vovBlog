@@ -49,15 +49,24 @@ set "PID_FILE=%TEMP%\vovblog-publisher.pids"
 REM 清理旧的 PID 文件
 if exist "%PID_FILE%" del "%PID_FILE%"
 
-REM 启动 Next.js 开发服务器
+REM 获取 Tailscale IP 地址
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /C:"100."') do set TAILSCALE_IP=%%a
+set TAILSCALE_IP=%TAILSCALE_IP: =%
+
+REM 启动 Next.js 生产服务器
 echo.
 echo =========================================
-echo 1️⃣  启动 Next.js 开发服务器...
+echo 1️⃣  启动 Next.js 生产服务器...
 echo =========================================
-echo 访问: http://localhost:3000
+echo 本地访问: http://localhost:3000
+if defined TAILSCALE_IP (
+  echo Tailscale 访问: http://%TAILSCALE_IP%:3000
+) else (
+  echo Tailscale: 未检测到 IP
+)
 echo.
 
-start "VovBlog Dev Server" cmd /k "cd /d %PROJECT_DIR% && bun run dev"
+start "VovBlog Production Server" cmd /k "cd /d %PROJECT_DIR% && set HOST=0.0.0.0 && bun start"
 
 REM 等待开发服务器启动
 timeout /t 3 /nobreak

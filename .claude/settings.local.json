@@ -32,7 +32,18 @@
       "Bash(find:*)",
       "Bash(wc:*)",
       "Bash(grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(tailscale ip:*)",
+      "Bash(ip addr:*)",
+      "Bash(tailscale status:*)",
+      "Bash(systemctl status:*)",
+      "Bash(ip route:*)",
+      "Bash(ping -c 2 100.64.0.1 2>&1 || echo \"Tailscale network unreachable\")",
+      "Bash(powershell.exe -Command \"tailscale status\" 2>&1 | head -20)",
+      "Bash(powershell.exe -Command \"tailscale ip -4\")",
+      "Bash(ss -tlnp 2>/dev/null | grep -E \":\\(3000|80|443|22\\)\" || netstat -tlnp 2>/dev/null | grep -E \":\\(3000|80|443|22\\)\" || echo \"No listening ports found\")",
+      "Bash(echo $NODE_ENV)",
+      "Bash(kill -9 40900 && sleep 2 && echo \"服务器已停止，请重新运行: bun run dev\")"
     ],
     "deny": [],
     "ask": []
