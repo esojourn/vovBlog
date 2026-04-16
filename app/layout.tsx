@@ -210,7 +210,7 @@ export default async function RootLayout({
           </div>
         </ThemeProvider>
         <GoogleAnalytics />
-        <Analytics />
+        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )

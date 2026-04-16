@@ -42,6 +42,7 @@ export default function AdminLogin() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'same-origin',
         body: JSON.stringify({ password }),
       })
 
@@ -59,10 +60,11 @@ export default function AdminLogin() {
         return
       }
 
-      // 登录成功，重定向到创建页面
-      router.push('/admin/new')
+      // 登录成功，使用硬跳转确保 cookie 生效
+      window.location.href = '/admin/new'
       // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
     } catch (err) {
+      console.error('Login fetch error:', err)
       setError('网络错误，请重试')
       setLoading(false)
     }

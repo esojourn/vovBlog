@@ -1,6 +1,6 @@
 #!/bin/bash
 # VovBlog Publisher 启动脚本（Linux/Mac）
-# 启动 Next.js 开发服务器和 Cloudflare Tunnel
+# 启动 Next.js 生产服务器，通过 Tailscale 网络访问
 # wsl内自动启动，可以在 开始 》程序 》启动内创建快捷方式：
 # C:\Windows\System32\wsl.exe -d <LINUX> -u <USER> -- bash -l -c "/<PATH>/vovBlog/scripts/start-publisher.sh"
 
@@ -75,13 +75,13 @@ else
   fi
 fi
 
-# 检查 cloudflared 是否已安装
-if ! command -v cloudflared &> /dev/null; then
-  echo "错误: 未找到 cloudflared，请先安装:"
-  echo "  macOS: brew install cloudflare/cloudflare/cloudflared"
-  echo "  Linux: 访问 https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/"
-  exit 1
-fi
+# 检查 Tailscale 是否已安装并运行
+#if ! command -v tailscale &> /dev/null; then
+#  echo "错误: 未找到 tailscale，请先安装:"
+#  echo "  macOS: Mac App Store 搜索 Tailscale"
+#  echo "  Linux: curl -fsSL https://tailscale.com/install.sh | sh"
+#  exit 1
+#fi
 
 # 启动前清理旧进程（可选，避免端口被占用）
 cleanup() {
@@ -90,7 +90,6 @@ cleanup() {
   echo "正在清理并停止服务..."
   echo "========================================="
   kill %1 2>/dev/null || true
-  kill %2 2>/dev/null || true
   exit 0
 }
 
@@ -102,7 +101,7 @@ TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || ip addr | grep -oP '100\.\d+\.\d+\
 # 启动 Next.js 生产服务器
 echo ""
 echo "========================================="
-echo "1️⃣  启动 Next.js 生产服务器..."
+echo "🚀 启动 Next.js 生产服务器..."
 echo "========================================="
 echo "本地访问: http://localhost:3000"
 if [ "$TAILSCALE_IP" != "未检测到" ]; then
@@ -115,19 +114,5 @@ echo ""
 HOST=0.0.0.0 bun start &
 DEV_PID=$!
 
-# 等待开发服务器启动
-sleep 3
-
-# 启动 Cloudflare Tunnel
-echo ""
-echo "========================================="
-echo "2️⃣  启动 Cloudflare Tunnel..."
-echo "========================================="
-echo "访问: https://admin.domain/admin"
-echo ""
-
-cloudflared tunnel --protocol http2 run vovblog-publisher &
-TUNNEL_PID=$!
-
 # 等待进程
-wait $DEV_PID $TUNNEL_PID
+wait $DEV_PID

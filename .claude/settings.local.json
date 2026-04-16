@@ -43,7 +43,9 @@
       "Bash(powershell.exe -Command \"tailscale ip -4\")",
       "Bash(ss -tlnp 2>/dev/null | grep -E \":\\(3000|80|443|22\\)\" || netstat -tlnp 2>/dev/null | grep -E \":\\(3000|80|443|22\\)\" || echo \"No listening ports found\")",
       "Bash(echo $NODE_ENV)",
-      "Bash(kill -9 40900 && sleep 2 && echo \"服务器已停止，请重新运行: bun run dev\")"
+      "Bash(kill -9 40900 && sleep 2 && echo \"服务器已停止，请重新运行: bun run dev\")",
+      "Bash(awk '{print $1}')",
+      "Bash(awk '{print $2}')"
     ],
     "deny": [],
     "ask": []
