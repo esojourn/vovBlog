@@ -9,14 +9,9 @@ import { slugify } from '@/lib/utils'
 import { getDefaultSource } from '@/lib/source-config'
 import { syncToGithubAsync } from '@/lib/git-sync'
 
-// 提高请求体大小限制到 10MB（支持超长文章）
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-}
+// App Router 不使用 Pages Router 的 config.api.bodyParser
+// 请求体大小由 Next.js 运行时自动处理（默认已支持较大请求体）
+export const maxDuration = 30
 
 export async function GET(request: Request) {
   try {
