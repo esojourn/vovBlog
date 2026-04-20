@@ -1,6 +1,6 @@
 @echo off
 REM VovBlog Publisher 启动脚本（Windows）
-REM 启动 Next.js 开发服务器和 Cloudflare Tunnel
+REM 启动 Next.js 生产服务器，通过 Tailscale 网络访问
 
 setlocal enabledelayedexpansion
 
@@ -33,55 +33,40 @@ if not exist "node_modules" (
   echo.
 )
 
-REM 检查 cloudflared 是否已安装
-where cloudflared >nul 2>nul
-if errorlevel 1 (
-  echo 错误: 未找到 cloudflared，请先安装
-  echo 访问: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/
+REM 检查生产构建是否存在
+if not exist ".next" (
+  echo ⚠️  生产构建不存在，正在构建...
+  call bun run build
   echo.
-  pause
-  exit /b 1
+) else (
+  echo 🔍 生产构建已存在
+  echo 按 'r' 重新构建，或按任意其他键继续...
+  choice /c rn /t 5 /d n /n >nul 2>nul
+  if !errorlevel! equ 1 (
+    echo 🔨 正在重新构建生产包...
+    call bun run build
+    echo.
+  )
 )
 
-REM 创建临时文件来存储进程 PID
-set "PID_FILE=%TEMP%\vovblog-publisher.pids"
-
-REM 清理旧的 PID 文件
-if exist "%PID_FILE%" del "%PID_FILE%"
-
 REM 获取 Tailscale IP 地址
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /C:"100."') do set TAILSCALE_IP=%%a
-set TAILSCALE_IP=%TAILSCALE_IP: =%
+set TAILSCALE_IP=
+for /f "tokens=*" %%a in ('tailscale ip -4 2^>nul') do set TAILSCALE_IP=%%a
 
 REM 启动 Next.js 生产服务器
 echo.
 echo =========================================
-echo 1️⃣  启动 Next.js 生产服务器...
+echo 🚀 启动 Next.js 生产服务器...
 echo =========================================
 echo 本地访问: http://localhost:3000
 if defined TAILSCALE_IP (
   echo Tailscale 访问: http://%TAILSCALE_IP%:3000
 ) else (
-  echo Tailscale: 未检测到 IP
+  echo Tailscale: 未检测到 IP（请确保已加入 Tailscale 网络）
 )
 echo.
-
-start "VovBlog Production Server" cmd /k "cd /d %PROJECT_DIR% && set HOST=0.0.0.0 && bun start"
-
-REM 等待开发服务器启动
-timeout /t 3 /nobreak
-
-REM 启动 Cloudflare Tunnel
-echo.
-echo =========================================
-echo 2️⃣  启动 Cloudflare Tunnel...
-echo =========================================
-echo 访问: https://pub.waqi.uk/admin
-echo.
-echo 按 Ctrl+C 停止所有服务
+echo 按 Ctrl+C 停止服务
 echo.
 
-start "Cloudflare Tunnel" cmd /k "cd /d %PROJECT_DIR% && cloudflared tunnel run vovblog-publisher"
-
-REM 保持窗口打开
-pause
+set HOST=0.0.0.0
+call bun start

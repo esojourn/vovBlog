@@ -29,7 +29,7 @@
 - 🏷️ **标签和分类系统**：灵活的内容组织方式
 - 📱 **响应式设计**：在任何设备上都有良好的阅读体验
 - ⚡ **极速部署**：零配置部署到 Vercel
-- 📱 **远程发布**（v1.4.0 新增）：通过 Cloudflare Tunnel 在家庭环境建立独立发布端，保障顺畅抓取，方便在手机上随时转载文章
+- 📱 **远程发布**（v1.4.0 新增）：通过 Tailscale 组网在家庭环境建立独立发布端，保障顺畅抓取，方便在手机上随时转载文章
 - 🔒 **登录限流**（v1.4.0 新增）：防止暴力破解，15 分钟最多 5 次尝试
 - 🚀 **Git 自动同步**（v1.4.0 新增）：保存后自动推送到 GitHub，触发 Vercel 部署
 - 🔍 **SEO 优化**（v1.3.0 新增）：增强搜索引擎索引能力
@@ -150,148 +150,59 @@ bun run deploy
 
 ## 📱 远程发布配置 (可选)
 
-如果你希望在手机或其他设备上远程发布文章，可以配置 Cloudflare Tunnel。
+如果你希望在手机或其他设备上远程发布文章，可以通过 Tailscale 组网实现。
 
 ### 为什么需要远程发布？
 
 - 📱 **手机发布**：随时随地发布文章，不受地点限制
-- 🔒 **安全访问**：双重认证保护，无需暴露端口
+- 🔒 **安全访问**：Tailscale 基于 WireGuard 加密，无需暴露端口
 - ⚡ **自动同步**：保存后自动推送到 GitHub，触发 Vercel 部署
-- 🌐 **动态 IP 友好**：无需配置 DDNS 或端口转发
+- 🌐 **零配置组网**：无需 DDNS、端口转发或公网 IP
 
-### 工作原理与安全说明
-
-#### Cloudflare Tunnel 工作流程
+### 工作原理
 
 ```
-外部用户                 Cloudflare Edge          你的本地电脑
-   ↓                          ↓                       ↓
-访问 https://admin.domain/admin
-   ↓                          ↓
-   └──────→ (HTTPS 443) ─────→ Cloudflare 边缘服务器
-                              ↓ (加密隧道)
-                        Cloudflare Tunnel 协议
-                        (QUIC/HTTP2，动态端口)
-                              ↓
-                        本地 cloudflared 客户端
-                        (出站连接，无需开放端口)
-                              ↓
-                         http://localhost:3000
-                              ↓
-                         Next.js 开发服务器
+手机/其他设备 (Tailscale)          你的本地电脑 (Tailscale)
+        ↓                                  ↓
+  Tailscale 客户端               Tailscale 客户端
+        ↓                                  ↓
+  WireGuard 加密隧道 ←──────────→ WireGuard 加密隧道
+                                           ↓
+                                  http://100.x.x.x:3000
+                                           ↓
+                                  Next.js 生产服务器
 ```
 
-#### 关键特性
-
-**1. 无需开放公网端口**
-- 本地电脑不监听任何公网端口
-- 不需要配置路由器端口转发
-- cloudflared 主动连接到 Cloudflare（出站连接）
-
-**2. 443 端口位置**
-- HTTPS 443 端口**仅在 Cloudflare Edge 服务器**（美国）
-- 本地服务运行在 `localhost:3000`（内网）
-- 两者通过加密 Tunnel 连接
-
-**3. 法律合规性** ✅
-- ✅ 完全合法，无需 ICP 备案
-- ✅ 出站连接符合家庭宽带使用规范
-- ✅ 不违反任何中国法律法规
-- ✅ 真正的 Web 服务运行在 Cloudflare 海外服务器
-
-#### 与传统端口转发的对比
-
-| 特性 | Cloudflare Tunnel | 传统端口转发 |
-|-----|------------------|------------|
-| 本地开放端口 | ❌ 不需要 | ✅ 需要开放 443 |
-| 路由器配置 | ❌ 不需要 | ✅ 需要端口转发 |
-| 公网 IP 要求 | ❌ 不需要 | ✅ 需要固定/动态IP |
-| 法律风险 | ✅ 无风险 | ⚠️ 可能需要备案 |
-| 安全性 | ✅ 高（双重认证） | ⚠️ 需自行加固 |
-| 动态 IP 友好 | ✅ 完全支持 | ❌ 需配置 DDNS |
+- 所有设备通过 Tailscale 虚拟局域网（100.x.x.x 网段）互联
+- 无需开放公网端口，无需路由器配置
+- 点对点加密，流量不经过第三方服务器
 
 ### 前提条件
 
 - ✅ 已完成上述"本地部署"步骤
-- ✅ 拥有 Cloudflare 账号（免费）
-- ✅ 域名已托管在 Cloudflare（或可添加子域名）
+- ✅ 本地电脑和手机均已安装 Tailscale 并加入同一网络
 - ✅ 本地电脑保持开机运行
 
 ### 配置步骤
 
-#### 1. 安装 cloudflared
+#### 1. 安装 Tailscale
 
-**macOS:**
-```bash
-brew install cloudflare/cloudflare/cloudflared
-```
+在本地电脑和手机上安装 Tailscale：
 
-**Windows:**
-```bash
-winget install Cloudflare.cloudflared
-```
+- **macOS/Windows/Linux**: https://tailscale.com/download
+- **iOS**: App Store 搜索 Tailscale
+- **Android**: Google Play 搜索 Tailscale
 
-**Linux:**
-访问 [官方安装指南](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/)
+安装后登录同一账号，设备会自动加入同一网络。
 
-#### 2. 登录 Cloudflare
+#### 2. 获取 Tailscale IP
 
 ```bash
-cloudflared tunnel login
+tailscale ip -4
+# 输出类似: 100.64.0.1
 ```
 
-浏览器会打开，选择你的域名（如 `waqi.uk`）并授权。
-
-#### 3. 创建 Tunnel
-
-```bash
-# 创建名为 vovblog-publisher 的隧道
-cloudflared tunnel create vovblog-publisher
-
-# 记录输出的 Tunnel ID（后续需要）
-```
-
-#### 4. 配置 Tunnel
-
-创建或编辑 `~/.cloudflared/config.yml`：
-
-```yaml
-tunnel: <粘贴上步获得的 TUNNEL_ID>
-credentials-file: ~/.cloudflared/<TUNNEL_ID>.json
-
-ingress:
-  - hostname: admin.domain  # 修改为你的子域名
-    service: http://localhost:3000
-  - service: http_status:404
-```
-
-#### 5. 配置 DNS
-
-```bash
-# 自动创建 CNAME 记录
-cloudflared tunnel route dns vovblog-publisher admin.domain
-```
-
-#### 6. 配置 Cloudflare Access (推荐)
-
-访问 [Cloudflare Zero Trust Dashboard](https://one.dash.cloudflare.com)：
-
-1. **创建 Access Application**
-   - Application name: `VovBlog Publisher`
-   - Application domain: `admin.domain`
-   - Path: `/admin/*`
-
-2. **创建 Access Policy**
-   - Policy name: `Admin Only`
-   - Action: `Allow`
-   - Include rules (选择以下之一):
-     - **Email**: 你的邮箱（推荐）
-     - **One-time PIN**: 每次访问发送验证码
-     - **IP Range**: 你的常用 IP 段
-
-3. **Session Duration**: 设置为 24 小时
-
-#### 7. 启动发布服务
+#### 3. 启动发布服务
 
 **Linux/Mac:**
 ```bash
@@ -303,38 +214,28 @@ cloudflared tunnel route dns vovblog-publisher admin.domain
 .\scripts\start-publisher.bat
 ```
 
-或双击运行 `start-publisher.bat` 文件。
+启动脚本会自动检测 Tailscale IP 并显示访问地址。
 
-#### 8. 访问远程发布界面
+#### 4. 访问远程发布界面
 
-1. 手机浏览器访问 `https://admin.domain/admin`
-2. 通过 Cloudflare Access 验证（首次或会话过期时）
-3. 输入 admin 密码登录
-4. 使用完整的发布界面创建/编辑文章
-5. 保存后自动推送到 GitHub → Vercel 自动部署
+1. 手机浏览器访问 `http://<Tailscale-IP>:3000/admin`
+2. 输入 admin 密码登录
+3. 使用完整的发布界面创建/编辑文章
+4. 保存后自动推送到 GitHub → Vercel 自动部署
 
 ### 安全说明
 
-远程发布采用双重认证机制：
-
-1. **第一层**：Cloudflare Access（邮箱/PIN 验证）
-2. **第二层**：应用密码登录（带限流保护）
-   - 15 分钟内最多 5 次登录尝试
-   - 超限后需等待冷却时间
-
-建议设置强密码（至少 16 位，包含大小写、数字、特殊字符）。
+- Tailscale 基于 WireGuard 协议，所有流量端到端加密
+- 只有加入你 Tailscale 网络的设备才能访问
+- 应用层仍有密码登录保护（带限流：15 分钟最多 5 次尝试）
+- 建议设置强密码（至少 16 位，包含大小写、数字、特殊字符）
 
 ### 故障排查
 
-**Q: 无法访问 admin.domain？**
-- 检查 Tunnel 是否正在运行：`cloudflared tunnel info vovblog-publisher`
-- 检查 DNS 记录是否生效（可能需要 5-10 分钟）
-- 确认本地开发服务器正在运行（localhost:3000）
-
-**Q: Cloudflare Access 无法验证？**
-- 检查 Access Application 配置是否正确
-- 确认邮箱地址与 Cloudflare 账户一致
-- 检查垃圾邮件文件夹（如果使用 PIN 验证）
+**Q: 无法访问 Tailscale IP？**
+- 确认两台设备都已连接 Tailscale：`tailscale status`
+- 检查防火墙是否放行 3000 端口
+- 确认本地服务器正在运行（localhost:3000）
 
 **Q: Git 自动同步失败？**
 - 检查 Git 凭证是否正确配置
@@ -380,9 +281,9 @@ cloudflared tunnel route dns vovblog-publisher admin.domain
 ### 🎉 新增功能
 
 1. **📱 远程发布支持** ⭐ 核心功能
-   - 通过 Cloudflare Tunnel 实现手机远程发布文章
-   - 访问 `admin.domain/admin` 即可在任何设备上发布
-   - 双重认证机制：Cloudflare Access + 应用密码
+   - 通过 Tailscale 组网实现手机远程发布文章
+   - 访问 `http://<Tailscale-IP>:3000/admin` 即可在任何设备上发布
+   - Tailscale WireGuard 加密 + 应用密码双重保护
    - 零端口转发配置，安全便捷
 
 2. **🔒 登录限流保护**
@@ -390,7 +291,6 @@ cloudflared tunnel route dns vovblog-publisher admin.domain
    - 15 分钟内最多 5 次登录尝试
    - 超限后显示倒计时提示
    - 支持 Cloudflare 真实 IP 识别
-
 3. **🚀 Git 自动同步**
    - 文章保存后自动推送到 GitHub
    - 后台异步处理，不阻塞请求
@@ -398,7 +298,7 @@ cloudflared tunnel route dns vovblog-publisher admin.domain
    - 无需手动 git push
 
 4. **🛠️ 便捷启动脚本**
-   - 一键启动开发服务器和 Tunnel
+   - 一键启动生产服务器，自动检测 Tailscale IP
    - 支持 Linux/Mac/Windows 平台
    - 自动检查依赖和环境配置
 
