@@ -44,9 +44,27 @@ export default function EditPostPage() {
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [importUrl, setImportUrl] = useState('')
+  // 来源下拉选项：默认使用内置来源，挂载后从 API 拉取合并后的完整列表
+  const [sourceOptions, setSourceOptions] = useState(getAllSourceOptions())
+
+  // 加载合并后的来源列表（含动态创建的来源）
+  const loadSourceOptions = async () => {
+    try {
+      const res = await fetch('/api/sources')
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data.options) && data.options.length > 0) {
+          setSourceOptions(data.options)
+        }
+      }
+    } catch {
+      // 拉取失败时保留内置来源，不影响使用
+    }
+  }
 
   useEffect(() => {
     fetchPost()
+    loadSourceOptions()
   }, [slug])
 
   const fetchPost = async () => {
@@ -148,15 +166,25 @@ export default function EditPostPage() {
       }
 
       // 填充表单数据
+      // 来源由服务端解析/自动创建；仅在解析到来源时更新
       setFormData((prev) => ({
         ...prev,
         title: data.title || prev.title,
         content: processedContent || prev.content,
         originalUrl: importUrl,
         date: data.publishDate || prev.date,
+        source: data.source || prev.source,
       }))
 
-      alert('✅ 文章导入成功！请检查并编辑后再发布')
+      if (data.sourceCreated) {
+        await loadSourceOptions()
+        alert(
+          `✅ 文章导入成功！\n\n已自动创建新来源「${data.accountName}」。\n` +
+            `如需启用独立子域名，请在 Cloudflare DNS 和 Vercel 域名中手工添加对应记录。`
+        )
+      } else {
+        alert('✅ 文章导入成功！请检查并编辑后再发布')
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : '导入失败'
       console.error('[Import] 错误:', error)
@@ -377,7 +405,7 @@ export default function EditPostPage() {
             }
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            {getAllSourceOptions().map((option) => (
+            {sourceOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

@@ -1,7 +1,7 @@
 import { headers, cookies } from 'next/headers'
 import { getAllPosts, extractTags, extractCategories, extractSources } from '@/lib/posts'
 import { getCurrentSubdomain, getMainDomain } from '@/lib/domain-utils'
-import { getSourceBySubdomain } from '@/lib/subdomain-config'
+import { getSourceBySubdomainMerged } from '@/lib/source-store'
 import { isPublisherMode } from '@/lib/publisher-mode'
 import HomeClient from '@/components/HomeClient'
 
@@ -33,7 +33,7 @@ export default async function HomePage() {
   // 如果通过子域名访问，只显示对应来源的文章
   let posts = allPosts
   if (currentSubdomain && shouldLoadPosts) {
-    const targetSource = getSourceBySubdomain(currentSubdomain)
+    const targetSource = getSourceBySubdomainMerged(currentSubdomain)
     if (targetSource) {
       posts = allPosts.filter((post) => post.source === targetSource)
     }
