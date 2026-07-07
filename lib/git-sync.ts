@@ -98,3 +98,61 @@ export function syncToGithubAsync(
     }
   })
 }
+
+/**
+ * 提交并推送来源配置文件（content/sources.json）
+ * 用于自动创建新来源后的持久化同步
+ * @param sourceName 新来源名称（仅用于提交信息）
+ * @returns Git 同步结果
+ */
+export async function syncSourcesToGithub(
+  sourceName: string
+): Promise<GitSyncResult> {
+  const commitMessage = `Auto: 新增来源 ${sourceName}`
+
+  try {
+    console.log(`[GitSync] 开始同步来源配置: ${commitMessage}`)
+
+    await execAsync('git add content/sources.json')
+
+    // 检查是否有更改
+    const { stdout: statusOutput } = await execAsync(
+      'git status --porcelain content/sources.json'
+    )
+    if (!statusOutput.trim()) {
+      console.log('[GitSync] sources.json 无更改，跳过提交')
+      return { success: true }
+    }
+
+    const { stdout: commitOutput } = await execAsync(
+      `git commit -m "${commitMessage}"`
+    )
+    console.log(`[GitSync] 来源提交成功: ${commitOutput.trim()}`)
+
+    const { stdout: pushOutput } = await execAsync('git push')
+    console.log(`[GitSync] 来源推送成功: ${pushOutput.trim()}`)
+
+    return { success: true, stdout: pushOutput }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[GitSync] 来源同步失败: ${errorMsg}`)
+    return { success: false, error: errorMsg }
+  }
+}
+
+/**
+ * 后台异步同步来源配置（不等待结果）
+ * @param sourceName 新来源名称
+ */
+export function syncSourcesToGithubAsync(sourceName: string): void {
+  setImmediate(async () => {
+    try {
+      const result = await syncSourcesToGithub(sourceName)
+      if (!result.success) {
+        console.warn(`[GitSync] 后台来源同步失败 (${sourceName}): ${result.error}`)
+      }
+    } catch (error) {
+      console.error('[GitSync] 后台来源同步异常:', error)
+    }
+  })
+}

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { chromium } from 'playwright'
 import TurndownService from 'turndown'
+import { resolveOrCreateSource } from '@/lib/source-store'
+import { syncSourcesToGithubAsync } from '@/lib/git-sync'
 
 interface FetchResult {
   title?: string
@@ -8,6 +10,10 @@ interface FetchResult {
   images?: string[]
   publishDate?: string
   accountName?: string
+  /** 解析或自动创建后的来源 id */
+  source?: string
+  /** 本次导入是否自动创建了新来源 */
+  sourceCreated?: boolean
   error?: string
 }
 
@@ -466,6 +472,31 @@ export async function POST(request: Request) {
     }
 
     const result = await fetchWeChatArticle(url)
+
+    // 抓取成功后，根据公众号名称解析来源；不存在则自动创建
+    if (!result.error) {
+      try {
+        const { source, created, config } = resolveOrCreateSource(
+          result.accountName
+        )
+        result.source = source
+        result.sourceCreated = created
+
+        // 新建来源：后台异步提交 content/sources.json（不阻塞响应）
+        if (created && config) {
+          syncSourcesToGithubAsync(config.shortName)
+          console.log(
+            `[WeChat Fetch] 自动创建来源 "${config.id}"` +
+              (config.subdomain
+                ? `，建议子域名: ${config.subdomain}.（DNS/Vercel 域名需手工添加）`
+                : '')
+          )
+        }
+      } catch (err) {
+        console.warn('[WeChat Fetch] 来源解析/创建失败，忽略:', err)
+      }
+    }
+
     return NextResponse.json(result)
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)

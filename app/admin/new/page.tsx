@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import TipTapEditor from '@/components/TipTapEditor'
 import { validateImageUrls } from '@/lib/utils'
 import {
-  matchSourceByAccountName,
   getDefaultSource,
   getAllSourceOptions,
 } from '@/lib/source-config'
@@ -40,6 +39,27 @@ export default function NewPostPage() {
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [importUrl, setImportUrl] = useState('')
+  // 来源下拉选项：默认使用内置来源，挂载后从 API 拉取合并后的完整列表
+  const [sourceOptions, setSourceOptions] = useState(getAllSourceOptions())
+
+  // 加载合并后的来源列表（含动态创建的来源）
+  const loadSourceOptions = async () => {
+    try {
+      const res = await fetch('/api/sources')
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data.options) && data.options.length > 0) {
+          setSourceOptions(data.options)
+        }
+      }
+    } catch {
+      // 拉取失败时保留内置来源，不影响使用
+    }
+  }
+
+  useEffect(() => {
+    loadSourceOptions()
+  }, [])
 
   const handleImportArticle = async () => {
     if (!importUrl.trim()) {
@@ -110,16 +130,14 @@ export default function NewPostPage() {
       }
 
       // 填充表单数据
-      // 🆕 根据公众号名称自动设置来源
-      let autoSource = getDefaultSource()  // 使用统一配置的默认值
-      if (data.accountName) {
-        const matchedSource = matchSourceByAccountName(data.accountName)
-        if (matchedSource) {
-          autoSource = matchedSource
-          console.log(`[Import] 自动识别公众号: ${data.accountName} → ${matchedSource}`)
-        } else {
-          console.log(`[Import] 未识别的公众号: ${data.accountName}，保持默认来源`)
-        }
+      // 🆕 来源由服务端解析/自动创建（见 /api/fetch-wechat-article）
+      const autoSource = data.source || getDefaultSource()
+      if (data.sourceCreated) {
+        console.log(`[Import] 已自动创建新来源: ${autoSource}`)
+        // 刷新下拉选项，使新来源立即出现在列表中
+        await loadSourceOptions()
+      } else {
+        console.log(`[Import] 匹配到来源: ${autoSource}`)
       }
 
       setFormData((prev) => ({
@@ -132,7 +150,14 @@ export default function NewPostPage() {
       }))
 
       setImportUrl('')
-      alert('✅ 文章导入成功！请检查并编辑后再发布')
+      if (data.sourceCreated) {
+        alert(
+          `✅ 文章导入成功！\n\n已自动创建新来源「${data.accountName}」。\n` +
+            `如需启用独立子域名，请在 Cloudflare DNS 和 Vercel 域名中手工添加对应记录。`
+        )
+      } else {
+        alert('✅ 文章导入成功！请检查并编辑后再发布')
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : '导入失败'
       console.error('[Import] 错误:', error)
@@ -351,7 +376,7 @@ export default function NewPostPage() {
             }
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            {getAllSourceOptions().map((option) => (
+            {sourceOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
