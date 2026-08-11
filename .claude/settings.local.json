@@ -45,7 +45,14 @@
       "Bash(echo $NODE_ENV)",
       "Bash(kill -9 40900 && sleep 2 && echo \"服务器已停止，请重新运行: bun run dev\")",
       "Bash(awk '{print $1}')",
-      "Bash(awk '{print $2}')"
+      "Bash(awk '{print $2}')",
+      "Bash(cd *)",
+      "Bash(git merge *)",
+      "Bash(git push *)",
+      "Bash(bash -n /home/dx/dev/vovBlog/scripts/start-publisher.sh)",
+      "Bash(git -C /home/dx/dev/vovBlog remote get-url origin)",
+      "Bash(git -C /home/dx/dev/vovBlog diff --check -- scripts/start-publisher.sh)",
+      "Bash(git -C /home/dx/dev/vovBlog diff -- scripts/start-publisher.sh)"
     ],
     "deny": [],
     "ask": []

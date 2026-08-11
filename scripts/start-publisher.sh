@@ -49,6 +49,45 @@ fi
 # 更新到项目目录
 cd "$PROJECT_DIR"
 
+# Publisher 的自动 Git 同步必须使用 esojourn 账户推送。
+# 记录当前 GitHub CLI 账户，脚本退出时再恢复。
+PUBLISHER_GITHUB_USER="esojourn"
+ORIGINAL_GITHUB_USER=""
+GITHUB_USER_SWITCHED=false
+
+restore_github_user() {
+  if [ "$GITHUB_USER_SWITCHED" = true ] && [ -n "$ORIGINAL_GITHUB_USER" ]; then
+    echo "🔄 正在恢复 GitHub 账户: $ORIGINAL_GITHUB_USER"
+    if ! gh auth switch --hostname github.com --user "$ORIGINAL_GITHUB_USER"; then
+      echo "⚠️  GitHub 账户恢复失败，请手动运行: gh auth switch --user $ORIGINAL_GITHUB_USER"
+    fi
+  fi
+}
+
+if ! command -v gh &> /dev/null; then
+  echo "错误: 未找到 GitHub CLI (gh)，无法确认推送账户"
+  exit 1
+fi
+
+ORIGINAL_GITHUB_USER=$(gh api user --jq '.login' 2>/dev/null || true)
+if [ -z "$ORIGINAL_GITHUB_USER" ]; then
+  echo "错误: 无法获取当前 GitHub 用户，请先运行 gh auth login"
+  exit 1
+fi
+
+if [ "$ORIGINAL_GITHUB_USER" != "$PUBLISHER_GITHUB_USER" ]; then
+  echo "🔄 当前 GitHub 用户为 $ORIGINAL_GITHUB_USER，临时切换到 $PUBLISHER_GITHUB_USER..."
+  if ! gh auth switch --hostname github.com --user "$PUBLISHER_GITHUB_USER"; then
+    echo "错误: 无法切换到 $PUBLISHER_GITHUB_USER，请先使用 gh auth login 添加该账户"
+    exit 1
+  fi
+  GITHUB_USER_SWITCHED=true
+else
+  echo "✅ 当前 GitHub 用户已是 $PUBLISHER_GITHUB_USER"
+fi
+
+trap restore_github_user EXIT
+
 # 检查依赖是否已安装
 if [ ! -d "node_modules" ]; then
   echo "⚠️  依赖未安装，正在运行 bun install..."

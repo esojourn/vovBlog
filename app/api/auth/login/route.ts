@@ -65,9 +65,13 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
 
+    // 检查是否通过 HTTPS 访问
+    const protocol = request.headers.get('x-forwarded-proto') ||
+                     (request.url.startsWith('https') ? 'https' : 'http')
+
     response.cookies.set('admin_session', sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // 生产环境强制 HTTPS
+      secure: protocol === 'https', // 只有 HTTPS 时才启用 secure
       sameSite: 'lax',
       maxAge: 24 * 60 * 60, // 24小时
       path: '/',
