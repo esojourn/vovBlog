@@ -5,5 +5,12 @@
     "shortName": "眼中瞳人",
     "subdomain": "yztr",
     "description": "眼中瞳人公众号文章"
+  },
+  {
+    "id": "\"真光照瓦器\"公众号",
+    "name": "\"真光照瓦器\"公众号",
+    "shortName": "真光照瓦器",
+    "subdomain": "zgzwq",
+    "description": "真光照瓦器公众号文章"
   }
 ]
