@@ -62,9 +62,9 @@ export const SOURCES: SourceConfig[] = [
     description: '灵粮供应站，属灵能量加油站',
   },
   {
-    id: '"拨摩的海岛"公众号',
-    name: '"拨摩的海岛"公众号',
-    shortName: '拨摩的海岛',
+    id: '"拔摩的海岛"公众号',
+    name: '"拔摩的海岛"公众号',
+    shortName: '拔摩的海岛',
     subdomain: 'bmhd',
     qrCode: '/qrcodes/bmhd.png',
     description: '尔识真理，真理释尔',
