@@ -3,6 +3,7 @@ import path from 'path'
 import matter from 'gray-matter'
 import TurndownService from 'turndown'
 import { getDefaultSource } from '@/lib/source-config'
+import { calculateReadingTime } from '@/lib/utils'
 
 export interface PostMeta {
   title: string
@@ -18,6 +19,17 @@ export interface PostMeta {
 export interface Post extends PostMeta {
   slug: string
   content: string
+}
+
+// 列表页使用的精简版本：不含正文，避免把全文序列化进首页（Vercel Fast Origin Transfer）
+export interface PostSummary extends PostMeta {
+  slug: string
+  readingTime: number
+}
+
+export function toPostSummary(post: Post): PostSummary {
+  const { content, ...meta } = post
+  return { ...meta, readingTime: calculateReadingTime(content) }
 }
 
 const postsDirectory = path.join(process.cwd(), 'content/posts')

@@ -1,15 +1,13 @@
 import { headers, cookies } from 'next/headers'
-import { getAllPosts, extractTags, extractCategories, extractSources } from '@/lib/posts'
+import { getAllPosts, toPostSummary, extractTags, extractCategories, extractSources } from '@/lib/posts'
 import { getCurrentSubdomain, getMainDomain } from '@/lib/domain-utils'
 import { getSourceBySubdomainMerged } from '@/lib/source-store'
 import { isPublisherMode } from '@/lib/publisher-mode'
 import HomeClient from '@/components/HomeClient'
 
 export default async function HomePage() {
-  // 🎯 加载完整内容以支持混合搜索（方案A）
-  // 第1层搜索：快速搜索元数据（标题、描述、标签）
-  // 第2层搜索：仅当元数据无结果时，才搜索完整内容
-  // 这样可以保留全文搜索功能，同时大多数查询依然很快（5-10ms）
+  // 🎯 只向客户端传递元数据和阅读时间，不传正文
+  // 全文搜索所需的正文由 /search-index.json 按需加载（静态文件，走 CDN 缓存）
 
   // 发布模式检查
   const publisherMode = isPublisherMode()
@@ -46,7 +44,7 @@ export default async function HomePage() {
 
   return (
     <HomeClient
-      initialPosts={posts}
+      initialPosts={posts.map(toPostSummary)}
       allTags={tags}
       allCategories={categories}
       allSources={sources}

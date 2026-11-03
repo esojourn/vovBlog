@@ -44,9 +44,10 @@ export function middleware(request: NextRequest) {
 
   if (publisherMode) {
     const isBlogPostPage = pathname.startsWith('/blog/')
+    const isSearchIndex = pathname === '/search-index.json'
 
-    // 文章详情页：未登录时重定向到 /unauthorized
-    if (isBlogPostPage && !isAuthenticated) {
+    // 文章详情页和全文搜索索引：未登录时重定向到 /unauthorized
+    if ((isBlogPostPage || isSearchIndex) && !isAuthenticated) {
       return NextResponse.redirect(new URL('/unauthorized', request.url))
     }
   }
@@ -62,5 +63,6 @@ export const config = {
     '/api/upload/:path*',
     '/',
     '/blog/:path*',
+    '/search-index.json',
   ],
 }

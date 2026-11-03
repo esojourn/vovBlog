@@ -5,11 +5,11 @@ import PostCard from '@/components/PostCard'
 import SearchBar from '@/components/SearchBar'
 import { CreateButton } from '@/components/CreateButton'
 import { AdminLink } from '@/components/AdminLink'
-import { searchPosts } from '@/lib/search'
-import { Post } from '@/lib/posts'
+import { searchPosts, hasMetaMatch } from '@/lib/search'
+import { PostSummary } from '@/lib/posts'
 
 interface HomeClientProps {
-  initialPosts: Post[]
+  initialPosts: PostSummary[]
   allTags: string[]
   allCategories: string[]
   allSources: string[]
@@ -43,12 +43,26 @@ export default function HomeClient({
   // 🎯 无限滚动状态
   const [displayedCount, setDisplayedCount] = useState(POSTS_PER_PAGE)
   const observerTarget = useRef<HTMLDivElement>(null)
+  // 🎯 全文索引：仅在元数据搜索无结果时按需加载
+  const [contentIndex, setContentIndex] = useState<Record<string, string> | null>(null)
+  const indexRequested = useRef(false)
+
+  useEffect(() => {
+    if (indexRequested.current || hasMetaMatch(initialPosts, searchQuery)) return
+    indexRequested.current = true
+    fetch('/search-index.json')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setContentIndex(data))
+      .catch(() => {
+        indexRequested.current = false
+      })
+  }, [initialPosts, searchQuery])
 
   const filteredPosts = useMemo(() => {
     // 🎯 优化：先用搜索函数过滤，再用其他条件过滤
     // 这样搜索函数只调用一次，而不是对每篇文章调用一次
     const searchFiltered = searchQuery
-      ? searchPosts(initialPosts, searchQuery)
+      ? searchPosts(initialPosts, searchQuery, contentIndex)
       : initialPosts
 
     return searchFiltered.filter((post) => {
@@ -60,7 +74,7 @@ export default function HomeClient({
 
       return matchesTag && matchesCategory && matchesSource && post.published
     })
-  }, [initialPosts, searchQuery, selectedTag, selectedCategory, selectedSource])
+  }, [initialPosts, searchQuery, contentIndex, selectedTag, selectedCategory, selectedSource])
 
   // 🎯 显示的文章列表
   const displayedPosts = useMemo(() => {

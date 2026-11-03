@@ -1,14 +1,14 @@
 import Link from 'next/link'
-import { formatDate, calculateReadingTime } from '@/lib/utils'
-import { Post } from '@/lib/posts'
+import { formatDate } from '@/lib/utils'
+import { PostSummary } from '@/lib/posts'
 import { Calendar, Clock, Tag, Share2 } from 'lucide-react'
 
 interface PostCardProps {
-  post: Post
+  post: PostSummary
 }
 
 export default function PostCard({ post }: PostCardProps) {
-  const readingTime = calculateReadingTime(post.content)
+  const { readingTime } = post
 
   return (
     <Link href={`/blog/${post.slug}`}>
