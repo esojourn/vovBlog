@@ -12,5 +12,12 @@
     "shortName": "真光照瓦器",
     "subdomain": "zgzwq",
     "description": "真光照瓦器公众号文章"
+  },
+  {
+    "id": "\"拿细耳\"公众号",
+    "name": "\"拿细耳\"公众号",
+    "shortName": "拿细耳",
+    "subdomain": "nxe",
+    "description": "拿细耳公众号文章"
   }
 ]
